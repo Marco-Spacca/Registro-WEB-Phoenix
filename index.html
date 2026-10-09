@@ -426,7 +426,7 @@ function renderAna(){
   const rows=S.utenti.filter(match).sort((a,b)=>String(a[asort.k]??'').localeCompare(String(b[asort.k]??''),'it')*asort.dir||a.cognome.localeCompare(b.cognome,'it')||a.nome.localeCompare(b.nome,'it'));
   $('tb-ana').innerHTML=rows.map((u,i)=>`<tr data-act="selAna" data-id="${u.id}" class="cursor-pointer ${anaSel===u.id?'bg-phx-gold/20':''}">
     <td class="td text-center text-slate-400">${i+1}</td><td class="td font-semibold">${esc(u.cognome)}</td><td class="td font-semibold">${esc(u.nome)}</td><td class="td">${u.sesso==='F'?'♀ Femmina':'♂ Maschio'}</td>
-    <td class="td">${fmt(u.nascita)} (<span class="text-phx-dark font-semibold">${age(u.nascita)}</span>)</td><td class="td">${esc(u.residenza)}</td><td class="td">${u.telefono?`<a class="underline decoration-dotted" href="tel:${esc(u.telefono.replace(/[^\d+]/g,''))}">${esc(u.telefono)}</a>`:''}</td><td class="td max-w-[10rem]"><button data-act="noteU" data-id="${u.id}" class="truncate block max-w-[10rem] text-left hover:underline hover:text-phx-dark" title="Clicca per leggere tutta la nota">${esc(u.nota||'')}</button></td>
+    <td class="td">${fmt(u.nascita)} (<span class="text-phx-dark font-semibold">${age(u.nascita)}</span>)</td><td class="td">${esc(u.residenza)}</td><td class="td">${u.telefono?`<a class="underline decoration-dotted" href="tel:${esc(u.telefono.replace(/[^\d+]/g,''))}">${esc(u.telefono)}</a>`:''}</td><td class="td text-center"><button data-act="noteU" data-id="${u.id}" class="ic ${u.nota?'text-phx-dark':'text-slate-300'}" title="${u.nota?'Leggi nota':'Nessuna nota'}"><i class="fa-solid fa-note-sticky text-lg leading-none"></i></button><button data-act="editU" data-id="${u.id}" class="ic" title="Modifica nota">✏️</button></td>
     <td class="td text-center"><button data-act="storico" data-id="${u.id}" class="ic text-phx-dark text-lg leading-none" title="Storico abbonamenti">ⓘ</button></td>
     <td class="td text-center">
       <button data-act="addReg" data-id="${u.id}" class="ic" title="Aggiungi al Registro">➕</button>
@@ -688,9 +688,9 @@ const ACT={
     openAbb(r.utenteId,r,last>=TODAY()?nextDay(last):TODAY());
   },
   info(id){
-    const r=calc(S.registro.find(x=>x.id===id)),tel=(S.utenti.find(x=>x.id===r.utenteId)||{}).telefono||'';
+    const r=calc(S.registro.find(x=>x.id===id)),tel=(S.utenti.find(x=>x.id===r.utenteId)||{}).telefono||'',nota=(S.utenti.find(x=>x.id===r.utenteId)||{}).nota||'';
     $('m-info-t').textContent='Dati anagrafici';
-    $('info-body').innerHTML=`<p class="text-lg font-bold mb-2">${esc(r.nome)} ${esc(r.cognome)}</p><p class="text-slate-500">Data di nascita</p><p class="font-semibold mb-2">${fmt(r.nascita)} (<span class="text-phx-dark font-semibold">${r.eta} anni</span>)</p><p class="text-slate-500">Residenza</p><p class="font-semibold mb-2">${esc(r.residenza)||'—'}</p><p class="text-slate-500">Telefono</p><p class="font-semibold">${esc(tel)||'—'}</p>`;
+    $('info-body').innerHTML=`<p class="text-lg font-bold mb-2">${esc(r.nome)} ${esc(r.cognome)}</p><p class="text-slate-500">Data di nascita</p><p class="font-semibold mb-2">${fmt(r.nascita)} (<span class="text-phx-dark font-semibold">${r.eta} anni</span>)</p><p class="text-slate-500">Residenza</p><p class="font-semibold mb-2">${esc(r.residenza)||'—'}</p><p class="text-slate-500">Telefono</p><p class="font-semibold mb-2">${esc(tel)||'—'}</p><p class="text-slate-500">Note</p><p class="font-semibold">${esc(nota)||'—'}</p>`;
     openModal('m-info');
   },
   editU:openUtente,
@@ -1080,15 +1080,15 @@ function renderTicker(){
 }
 
 /* ============ TICKER TRASCINABILE ============ */
-let tkDrag=null,tkMoved=false,tkOff=0;
+let tkDrag=null,tkSuppress=0,tkOff=0;
 (function(){
   const bar=$('ticker'),tk=$('tk');
   const dur=()=>parseFloat(getComputedStyle(tk).animationDuration)||30;
-  bar.addEventListener('pointerdown',e=>{if(bar.classList.contains('hidden'))return;tkDrag={x:e.clientX,lx:e.clientX};tkMoved=false;tk.style.animationPlayState='paused';try{bar.setPointerCapture(e.pointerId)}catch(_){}});
-  bar.addEventListener('pointermove',e=>{if(!tkDrag)return;const dx=e.clientX-tkDrag.lx;tkDrag.lx=e.clientX;if(Math.abs(e.clientX-tkDrag.x)>6)tkMoved=true;const d=dur(),w=tk.offsetWidth||1;tkOff=((tkOff+dx/(w/d))%d+d)%d;tk.style.animationDelay=(-tkOff)+'s'});
+  bar.addEventListener('pointerdown',e=>{if(bar.classList.contains('hidden'))return;tkDrag={x:e.clientX,lx:e.clientX};tk.style.animationPlayState='paused';try{bar.setPointerCapture(e.pointerId)}catch(_){}});
+  bar.addEventListener('pointermove',e=>{if(!tkDrag)return;const dx=e.clientX-tkDrag.lx;tkDrag.lx=e.clientX;if(Math.abs(e.clientX-tkDrag.x)>6)tkSuppress=Date.now()+400;const d=dur(),w=tk.offsetWidth||1;tkOff=((tkOff-dx/(w/d))%d+d)%d;tk.style.animationDelay=(-tkOff)+'s'});
   const end=()=>{if(!tkDrag)return;tkDrag=null;tk.style.animationPlayState='running'};
   bar.addEventListener('pointerup',end);bar.addEventListener('pointercancel',end);
-  document.addEventListener('click',e=>{if(tkMoved){tkMoved=false;e.stopPropagation();e.preventDefault()}},true);
+  document.addEventListener('click',e=>{if(Date.now()<tkSuppress){e.stopPropagation();e.preventDefault()}},true);
 })();
 
 /* ============ AVVIO ============ */
