@@ -28,6 +28,7 @@ body.home #brand{visibility:hidden}
 body.locked{overflow:hidden}
 body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 #tk{display:inline-block;padding-left:100vw;animation:tkm var(--d,30s) linear infinite}
+#ticker{cursor:grab;touch-action:pan-y}
 @keyframes tkm{to{transform:translateX(-100%)}}
 .shake{animation:sk .3s}
 @keyframes sk{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
@@ -258,7 +259,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null;
+let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contGroups=[];
 
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.utenti)&&Array.isArray(s.registro)&&Array.isArray(s.tipi)){s.archivio=Array.isArray(s.archivio)?s.archivio:[];s.spese=Array.isArray(s.spese)?s.spese:[];return s}}catch(e){}
@@ -326,10 +327,10 @@ function calc(r){
   return {...r,pagato,totale,daPagare:r2(totale-pagato),eta:age(r.nascita)};
 }
 function stato(r){
-  const dd=days(r.fine);
-  const exp=dd<0?'d':dd<=7?'w':'';
+  const dd=days(r.fine),ing=INGR0.includes(baseTipo(r.tipo));
+  const exp=ing?'':dd<0?'d':dd<=7?'w':'';
   const pay=r.daPagare>0.005?(r.pagato>1?'w':'d'):'';
-  return {exp,pay,ok:!pay&&dd>7};
+  return {exp,pay,ok:!pay&&(ing||dd>7)};
 }
 
 /* ============ NAVIGAZIONE ============ */
@@ -376,7 +377,7 @@ function renderAll(){
 const COLS=[['cognome','Cognome'],['nome','Nome'],['tipo','Abbonamento'],['inizio','Inizio'],['fine','Fine'],['totale','Totale (€)'],['pagato','Pagato (€)'],['daPagare','Da pagare (€)']];
 const NUM=['totale','pagato','daPagare'];
 
-const expanded=new Set(),openTot=new Set(),SEP={tipo:'l',fine:'r',pagato:'l',daPagare:'r'};
+const expanded=new Set(),openTot=new Set(),contExp=new Set(),SEP={tipo:'l',fine:'r',pagato:'l',daPagare:'r'};
 const sepB=k=>SEP[k]==='l'?'border-l-2 border-phx-dark/30':SEP[k]==='r'?'border-r-2 border-phx-dark/30':'';
 const sepH=k=>SEP[k]==='l'?'sl':SEP[k]==='r'?'sr':'';
 const pkey=r=>String(r.utenteId||r.nome+'|'+r.cognome).toLowerCase().trim();
@@ -425,7 +426,7 @@ function renderAna(){
   const rows=S.utenti.filter(match).sort((a,b)=>String(a[asort.k]??'').localeCompare(String(b[asort.k]??''),'it')*asort.dir||a.cognome.localeCompare(b.cognome,'it')||a.nome.localeCompare(b.nome,'it'));
   $('tb-ana').innerHTML=rows.map((u,i)=>`<tr data-act="selAna" data-id="${u.id}" class="cursor-pointer ${anaSel===u.id?'bg-phx-gold/20':''}">
     <td class="td text-center text-slate-400">${i+1}</td><td class="td font-semibold">${esc(u.cognome)}</td><td class="td font-semibold">${esc(u.nome)}</td><td class="td">${u.sesso==='F'?'♀ Femmina':'♂ Maschio'}</td>
-    <td class="td">${fmt(u.nascita)} (${age(u.nascita)})</td><td class="td">${esc(u.residenza)}</td><td class="td">${u.telefono?`<a class="underline decoration-dotted" href="tel:${esc(u.telefono.replace(/[^\d+]/g,''))}">${esc(u.telefono)}</a>`:''}</td><td class="td max-w-[10rem] truncate" title="${esc(u.nota||'')}">${esc(u.nota||'')}</td>
+    <td class="td">${fmt(u.nascita)} (<span class="text-phx-dark font-semibold">${age(u.nascita)}</span>)</td><td class="td">${esc(u.residenza)}</td><td class="td">${u.telefono?`<a class="underline decoration-dotted" href="tel:${esc(u.telefono.replace(/[^\d+]/g,''))}">${esc(u.telefono)}</a>`:''}</td><td class="td max-w-[10rem]"><button data-act="noteU" data-id="${u.id}" class="truncate block max-w-[10rem] text-left hover:underline hover:text-phx-dark" title="Clicca per leggere tutta la nota">${esc(u.nota||'')}</button></td>
     <td class="td text-center"><button data-act="storico" data-id="${u.id}" class="ic text-phx-dark text-lg leading-none" title="Storico abbonamenti">ⓘ</button></td>
     <td class="td text-center">
       <button data-act="addReg" data-id="${u.id}" class="ic" title="Aggiungi al Registro">➕</button>
@@ -440,9 +441,21 @@ function renderCont(){
   const all=[...S.registro.flatMap(r=>(r.acconti||[]).map(p=>({...p,nome:r.nome,cognome:r.cognome,tipo:r.tipo}))),...S.archivio.map(p=>({...p,arch:1}))].filter(p=>(p.data||'').startsWith(m));
   const CCOLS=[['data','Data pagamento'],['cognome','Cognome'],['nome','Nome'],['tipo','Abbonamento'],['importo','Importo ricevuto']];
   $('th-cont').innerHTML='<th class="td text-center">#</th>'+CCOLS.map(([k,l])=>`<th data-act="csort" data-id="${k}" class="td cursor-pointer hover:bg-[#fdeac0] ${k==='importo'?'text-right':''}">${l} <i class="fa-solid ${csort.k===k?(csort.dir>0?'fa-sort-up':'fa-sort-down'):'fa-sort text-slate-400'}"></i></th>`).join('')+'<th class="td text-center">Azioni</th>';
-  const rows=all.sort((a,b)=>csort.k==='importo'?(+a.importo-+b.importo)*csort.dir:String(a[csort.k]??'').localeCompare(String(b[csort.k]??''),'it')*csort.dir);
-  $('tb-cont').innerHTML=rows.map((p,i)=>`<tr data-act="selCont" data-id="${p.id}" class="cursor-pointer ${contSel===p.id?'bg-phx-gold/30':''}"><td class="td text-center text-slate-400">${i+1}</td><td class="td">${fmt(p.data)}</td><td class="td font-semibold">${esc(p.cognome)}</td><td class="td font-semibold">${esc(p.nome)}</td><td class="td">${esc(p.tipo)}${p.arch?' <span class="text-xs text-slate-400">(eliminato dal Registro)</span>':''}</td><td class="td text-right">${eur(p.importo)}</td><td class="td text-center"><button data-act="editPag" data-id="${p.id}" class="ic" title="Modifica">✏️</button></td></tr>`).join('');
-  $('cont-tot').textContent=eur(r2(rows.reduce((a,p)=>a+ +p.importo,0)));
+  const gmap=new Map();
+  all.forEach(p=>{const k=(p.nome+'|'+p.cognome).toLowerCase().trim();if(!gmap.has(k))gmap.set(k,[]);gmap.get(k).push(p)});
+  contGroups=[...gmap.values()].map(ps=>{ps.sort((a,b)=>(a.data||'').localeCompare(b.data||''));return {ps,sum:r2(ps.reduce((a,p)=>a+ +p.importo,0)),first:ps[0].data,last:ps[ps.length-1].data,tipo:ps.every(p=>p.tipo===ps[0].tipo)?ps[0].tipo:''}});
+  const gval=(g,k)=>k==='importo'?g.sum:k==='data'?g.first:(g.ps[0][k]??'');
+  contGroups.sort((A,B)=>csort.k==='importo'?(A.sum-B.sum)*csort.dir:String(gval(A,csort.k)).localeCompare(String(gval(B,csort.k)),'it')*csort.dir);
+  let html='';
+  contGroups.forEach((g,gi)=>{
+    const p0=g.ps[0];
+    if(g.ps.length===1){const p=p0;html+=`<tr data-act="selCont" data-id="${p.id}" class="cursor-pointer ${contSel===p.id?'bg-phx-gold/30':''}"><td class="td text-center text-slate-400">${gi+1}</td><td class="td">${fmt(p.data)}</td><td class="td font-semibold">${esc(p.cognome)}</td><td class="td font-semibold">${esc(p.nome)}</td><td class="td">${esc(p.tipo)}${p.arch?' <span class="text-xs text-slate-400">(eliminato dal Registro)</span>':''}</td><td class="td text-right">${eur(p.importo)}</td><td class="td text-center"><button data-act="editPag" data-id="${p.id}" class="ic" title="Modifica">✏️</button></td></tr>`;return}
+    const open=contExp.has(gi);
+    html+=`<tr data-act="cexp" data-id="${gi}" class="cursor-pointer ${open?'bg-phx-gold/20':''}"><td class="td text-center text-slate-400">${gi+1}</td><td class="td text-xs text-slate-500">${fmt(g.first)} → ${fmt(g.last)}</td><td class="td font-semibold">${esc(p0.cognome)}</td><td class="td font-semibold">${esc(p0.nome)}</td><td class="td">${g.tipo?esc(g.tipo):`<span class="text-xs text-slate-500">${g.ps.length} pagamenti</span>`}</td><td class="td text-right font-bold">${eur(g.sum)}</td><td class="td text-center"><span class="ic inline-block"><i class="fa-solid ${open?'fa-chevron-down':'fa-chevron-right'}"></i> ${g.ps.length}</span></td></tr>`;
+    if(open)g.ps.forEach(p=>{html+=`<tr data-act="selCont" data-id="${p.id}" class="cursor-pointer bg-phx-gold/10 ${contSel===p.id?'!bg-phx-gold/30':''}"><td class="td text-xs text-slate-400 text-right">↳</td><td class="td">${fmt(p.data)}</td><td class="td font-semibold">${esc(p.cognome)}</td><td class="td font-semibold">${esc(p.nome)}</td><td class="td">${esc(p.tipo)}${p.arch?' <span class="text-xs text-slate-400">(eliminato dal Registro)</span>':''}</td><td class="td text-right">${eur(p.importo)}</td><td class="td text-center"><button data-act="editPag" data-id="${p.id}" class="ic" title="Modifica">✏️</button></td></tr>`});
+  });
+  $('tb-cont').innerHTML=html;
+  $('cont-tot').textContent=eur(r2(all.reduce((a,p)=>a+ +p.importo,0)));
   $('cont-empty').classList.toggle('hidden',rows.length>0);
   const sp=S.spese.filter(x=>(x.data||'').startsWith(m)).sort((a,b)=>(a.data||'').localeCompare(b.data||''));
   $('tb-spese').innerHTML=sp.map(x=>`<tr><td class="td">${fmt(x.data)}</td><td class="td font-semibold !whitespace-normal">${esc(x.desc)}</td><td class="td text-right">${eur(x.importo)}</td><td class="td text-center"><button data-act="editSpesa" data-id="${x.id}" class="ic" title="Modifica">✏️</button><span class="text-phx-dark/50 font-bold">|</span><button data-act="delSpesa" data-id="${x.id}" class="ic text-phx-red" title="Elimina"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
@@ -530,7 +543,7 @@ mod('m-utente','max-w-md','Nuovo utente',`<form id="f-utente" class="p-5 space-y
   ${fld('Cognome *','<input id="u-cognome" required class="inp">')}
   <div class="grid grid-cols-2 gap-3">
     ${fld('Sesso *','<select id="u-sesso" class="inp"><option value="M">♂ Maschio</option><option value="F">♀ Femmina</option></select>')}
-    ${fld('Data di nascita *','<input type="date" id="u-nascita" required class="inp"><span id="u-age" class="text-xs font-semibold text-phx-red"></span>')}
+    ${fld('Data di nascita *','<input type="date" id="u-nascita" required class="inp"><span id="u-age" class="text-xs font-semibold text-phx-dark"></span>')}
   </div>
   ${fld('Residente in','<input id="u-residenza" placeholder="Es. Roma, Via Roma 10" class="inp">')}
   ${fld('Telefono','<input type="tel" id="u-tel" inputmode="tel" placeholder="Es. 333 1234567" class="inp">')}
@@ -677,7 +690,7 @@ const ACT={
   info(id){
     const r=calc(S.registro.find(x=>x.id===id)),tel=(S.utenti.find(x=>x.id===r.utenteId)||{}).telefono||'';
     $('m-info-t').textContent='Dati anagrafici';
-    $('info-body').innerHTML=`<p class="text-lg font-bold mb-2">${esc(r.nome)} ${esc(r.cognome)}</p><p class="text-slate-500">Data di nascita</p><p class="font-semibold mb-2">${fmt(r.nascita)} (${r.eta} anni)</p><p class="text-slate-500">Residenza</p><p class="font-semibold mb-2">${esc(r.residenza)||'—'}</p><p class="text-slate-500">Telefono</p><p class="font-semibold">${esc(tel)||'—'}</p>`;
+    $('info-body').innerHTML=`<p class="text-lg font-bold mb-2">${esc(r.nome)} ${esc(r.cognome)}</p><p class="text-slate-500">Data di nascita</p><p class="font-semibold mb-2">${fmt(r.nascita)} (<span class="text-phx-dark font-semibold">${r.eta} anni</span>)</p><p class="text-slate-500">Residenza</p><p class="font-semibold mb-2">${esc(r.residenza)||'—'}</p><p class="text-slate-500">Telefono</p><p class="font-semibold">${esc(tel)||'—'}</p>`;
     openModal('m-info');
   },
   editU:openUtente,
@@ -692,8 +705,10 @@ const ACT={
   csort(k){csort={k,dir:csort.k===k?-csort.dir:1};renderCont()},
   asort(k){asort={k,dir:asort.k===k?-asort.dir:1};renderAna()},
   selAna(id){anaSel=anaSel===id?null:id;renderAna()},
+  noteU(id){const u=S.utenti.find(x=>x.id===id);if(!u||!u.nota)return;$('m-info-t').textContent=`Note — ${u.nome} ${u.cognome}`;$('info-body').innerHTML=`<p class="leading-relaxed">${esc(u.nota)}</p>`;openModal('m-info')},
   selReg(id){regSel=regSel===id?null:id;renderRegistro()},
   selCont(id){contSel=contSel===id?null:id;renderCont()},
+  cexp(i){i=+i;contExp.has(i)?contExp.delete(i):contExp.add(i);renderCont()},
   tick(i){const r=tickItems[+i];if(!r)return;$('home-search').value=`${r.nome} ${r.cognome}`;homeSearch($('home-search').value);$('home-res').scrollIntoView({behavior:'smooth',block:'nearest'})},
   goto(i){const p=homeHits[+i];if(!p||!p.subs.length)return;q=`${p.nome} ${p.cognome}`.toLowerCase();$('search').value=`${p.nome} ${p.cognome}`;switchView('registro');const tr=$('tb-reg').querySelector('tr');if(tr){tr.classList.add('flash');setTimeout(()=>tr.classList.remove('flash'),800)}},
   storico(id){
@@ -704,7 +719,7 @@ const ACT={
     const yrs={};subs.forEach(r=>{const y=(r.inizio||'').slice(0,4)||'senza data';(yrs[y]=yrs[y]||[]).push(r)});
     $('info-body').innerHTML=Object.keys(yrs).sort().reverse().map(y=>{
       const tot=r2(yrs[y].reduce((a,r)=>a+r.totale,0)),paid=r2(yrs[y].reduce((a,r)=>a+r.pagato,0));
-      return `<p class="font-bold text-phx-dark mt-2">${y} <span class="text-xs font-normal text-slate-500">— tot. ${eur(tot)} · pagato ${eur(paid)} · da pagare ${eur(r2(tot-paid))}</span></p>`+yrs[y].map(r=>`<div class="border-b py-1.5"><p class="font-semibold">${esc(r.tipo)}${r.del?' <span class="text-xs font-normal text-slate-400">(eliminato dal Registro)</span>':''} <span class="font-normal text-slate-500 text-xs">${fmt(r.inizio)} → ${fmt(r.fine)}</span></p><p class="text-xs">Totale ${eur(r.totale)} · Pagato ${eur(r.pagato)} · Da pagare ${eur(r.daPagare)}</p><p class="text-xs text-slate-500">${r.acconti.length?'Acconti: '+[...r.acconti].sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(p=>fmt(p.data)+' '+eur(p.importo)).join(' · '):'Nessun acconto registrato'}</p></div>`).join('');
+      return `<p class="font-bold text-phx-dark mt-2">${y} <span class="text-xs font-normal text-slate-500">— tot. ${eur(tot)} · pagato ${eur(paid)} · da pagare ${eur(r2(tot-paid))}</span></p>`+yrs[y].map(r=>`<div class="border-b py-1.5"><p class="font-semibold">${esc(r.tipo)}${r.del?' <span class="text-xs font-normal text-slate-400">(eliminato dal Registro)</span>':''} <span class="font-normal text-slate-500 text-xs">${baseTipo(r.tipo)==='Singolo Ingresso'?fmt(r.inizio):fmt(r.inizio)+' → '+fmt(r.fine)}</span></p><p class="text-xs">Pagato ${eur(r.pagato)} · Da pagare ${eur(r.daPagare)}</p><p class="text-xs text-slate-500">${r.acconti.length?'Acconti: '+[...r.acconti].sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(p=>fmt(p.data)+' '+eur(p.importo)).join(' · '):'Nessun acconto registrato'}</p></div>`).join('');
     }).join('');
     openModal('m-info');
   },
@@ -1063,6 +1078,18 @@ function renderTicker(){
   $('tk').innerHTML=items.map((r,i)=>`<button data-act="tick" data-id="${i}" class="underline decoration-dotted underline-offset-4 cursor-pointer hover:text-phx-gold">${esc(r.nome)} ${esc(r.cognome)} ${fmt(r.fine)}</button>`).join('<span class="mx-6">-</span>');
   $('tk').style.setProperty('--d',Math.max(18,items.length*7)+'s');
 }
+
+/* ============ TICKER TRASCINABILE ============ */
+let tkDrag=null,tkMoved=false,tkOff=0;
+(function(){
+  const bar=$('ticker'),tk=$('tk');
+  const dur=()=>parseFloat(getComputedStyle(tk).animationDuration)||30;
+  bar.addEventListener('pointerdown',e=>{if(bar.classList.contains('hidden'))return;tkDrag={x:e.clientX,lx:e.clientX};tkMoved=false;tk.style.animationPlayState='paused';try{bar.setPointerCapture(e.pointerId)}catch(_){}});
+  bar.addEventListener('pointermove',e=>{if(!tkDrag)return;const dx=e.clientX-tkDrag.lx;tkDrag.lx=e.clientX;if(Math.abs(e.clientX-tkDrag.x)>6)tkMoved=true;const d=dur(),w=tk.offsetWidth||1;tkOff=((tkOff+dx/(w/d))%d+d)%d;tk.style.animationDelay=(-tkOff)+'s'});
+  const end=()=>{if(!tkDrag)return;tkDrag=null;tk.style.animationPlayState='running'};
+  bar.addEventListener('pointerup',end);bar.addEventListener('pointercancel',end);
+  document.addEventListener('click',e=>{if(tkMoved){tkMoved=false;e.stopPropagation();e.preventDefault()}},true);
+})();
 
 /* ============ AVVIO ============ */
 $('f-m').innerHTML=MESI.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
