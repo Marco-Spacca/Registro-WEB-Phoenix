@@ -456,7 +456,7 @@ function renderCont(){
   });
   $('tb-cont').innerHTML=html;
   $('cont-tot').textContent=eur(r2(all.reduce((a,p)=>a+ +p.importo,0)));
-  $('cont-empty').classList.toggle('hidden',rows.length>0);
+  $('cont-empty').classList.toggle('hidden',all.length>0);
   const sp=S.spese.filter(x=>(x.data||'').startsWith(m)).sort((a,b)=>(a.data||'').localeCompare(b.data||''));
   $('tb-spese').innerHTML=sp.map(x=>`<tr><td class="td">${fmt(x.data)}</td><td class="td font-semibold !whitespace-normal">${esc(x.desc)}</td><td class="td text-right">${eur(x.importo)}</td><td class="td text-center"><button data-act="editSpesa" data-id="${x.id}" class="ic" title="Modifica">✏️</button><span class="text-phx-dark/50 font-bold">|</span><button data-act="delSpesa" data-id="${x.id}" class="ic text-phx-red" title="Elimina"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
   const usc=r2(sp.reduce((a,x)=>a+ +x.importo,0)),net=r2(all.reduce((a,p)=>a+ +p.importo,0)-usc);
