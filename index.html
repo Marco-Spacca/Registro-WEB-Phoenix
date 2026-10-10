@@ -38,8 +38,13 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 @keyframes bookfloat{0%,100%{transform:translateY(0) rotate(-1.2deg)}50%{transform:translateY(-10px) rotate(1.2deg)}}
 @media(min-width:1024px){#tb-reg .td,#th-reg .td{padding:.5rem;white-space:normal}#tb-reg td:last-child,#tb-reg td:nth-last-child(2){white-space:nowrap}}
 .pin{color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}
-.fs-fake{position:fixed!important;inset:0!important;z-index:60;background:#fff8e8;overflow:auto;padding:1rem;margin:0!important;max-height:none!important}
-.fs-fake .overflow-auto{max-height:none!important;overflow:visible!important}
+.show-m{display:none}
+@media(max-width:767px){
+  .hide-m{display:none!important}
+  .show-m{display:inline-block}
+  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{padding:.35rem .4rem;font-size:.72rem}
+  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{white-space:normal}
+}
 @layer components{
 .inp{@apply w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-phx-red focus:outline-none}
 .lbl{@apply block text-xs font-semibold text-slate-700 mb-1}
@@ -55,19 +60,6 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 .w{@apply text-amber-900 font-bold bg-phx-gold rounded px-1.5 py-0.5}
 .d{@apply text-white font-bold bg-phx-red rounded px-1.5 py-0.5}
 .w2{@apply text-amber-900 font-bold bg-[#fff0c4] rounded px-1.5 py-0.5}
-}
-</style>
-<style id="mobile-exp">
-/* MOBILE-EXP (prova): tabelle a schede su telefono, niente scorrimento orizzontale. Per annullare: elimina questo intero blocco + la funzione mobileExp() + la riga mobileExp() in renderAll. */
-@media(max-width:767px){
-  table.tbl thead{display:none}
-  table.tbl,table.tbl tbody{display:block;width:100%}
-  table.tbl tbody tr{display:block;background:#fff;border:1px solid rgba(252,213,129,.8);border-radius:.75rem;margin:0 .25rem .6rem;padding:.2rem .8rem;box-shadow:0 1px 2px rgba(0,0,0,.06)}
-  table.tbl tbody td{display:flex;justify-content:space-between;align-items:center;gap:.75rem;width:100%!important;max-width:none!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:right;border:0;padding:.42rem 0}
-  table.tbl tbody td::before{content:attr(data-l);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;color:#64748b;text-align:left;flex-shrink:0;max-width:45%}
-  table.tbl tbody td[colspan]{display:block;text-align:left}
-  table.tbl tfoot{display:block}
-  table.tbl tfoot tr{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
 }
 </style>
 </head>
@@ -119,7 +111,6 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
       <button id="tbb-nuovo" onclick="openUtente()" class="btn bg-phx-red hover:bg-phx-dark flex-1 sm:flex-none"><i class="fa-solid fa-plus"></i> Nuovo Utente</button>
       <button id="tbb-reg" onclick="switchView('registro')" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark flex-1 sm:flex-none">📋 Registro</button>
       <button id="tbb-ana" onclick="switchView('anagrafiche')" class="btn bg-phx-red hover:bg-phx-dark flex-1 sm:flex-none hidden"><i class="fa-solid fa-address-book"></i> Anagrafiche</button>
-      <button id="btn-fs" onclick="toggleFS()" class="btn bg-phx-dark hover:bg-black flex-none !px-3 sm:hidden" title="Tabella a tutto schermo">⛶</button>
     </div>
   </div>
 
@@ -388,19 +379,18 @@ function renderAll(){
   else if(view==='contabilita')renderCont();
   else if(view==='stima')renderStima();
   else if(view==='sviluppatore')renderTipi();
-  if(window.innerWidth<768)mobileExp(); /* MOBILE-EXP: rimuovere se si annulla la prova */
 }
 
 const COLS=[['cognome','Cognome'],['nome','Nome'],['tipo','Abbonamento'],['inizio','Inizio'],['fine','Fine'],['totale','Totale (€)'],['pagato','Pagato (€)'],['daPagare','Da pagare (€)']];
 const NUM=['totale','pagato','daPagare'];
 
-const expanded=new Set(),openTot=new Set(),contExp=new Set(),SEP={tipo:'l',fine:'r',pagato:'l',daPagare:'r'};
+const expanded=new Set(),openTot=new Set(),contExp=new Set(),telShow=new Set(),SEP={tipo:'l',fine:'r',pagato:'l',daPagare:'r'};
 const sepB=k=>SEP[k]==='l'?'border-l-2 border-phx-dark/30':SEP[k]==='r'?'border-r-2 border-phx-dark/30':'';
 const sepH=k=>SEP[k]==='l'?'sl':SEP[k]==='r'?'sr':'';
 const pkey=r=>String(r.utenteId||r.nome+'|'+r.cognome).toLowerCase().trim();
 
 function renderRegistro(){
-  $('th-reg').innerHTML='<th class="td stk text-center">#</th>'+COLS.map(([k,l])=>`<th data-act="sort" data-id="${k}" class="td stk cursor-pointer hover:bg-[#fdeac0] ${NUM.includes(k)?'text-right':''} ${sepH(k)}">${l} <i class="fa-solid ${sort.k===k?(sort.dir>0?'fa-sort-up':'fa-sort-down'):'fa-sort text-slate-400'}"></i></th>${k==='nome'?'<th class="td stk text-center">Info</th>':''}`).join('')+'<th class="td stk text-center">Storico acconti</th><th class="td stk text-center">Azioni</th>';
+  $('th-reg').innerHTML='<th class="td stk text-center">#</th>'+COLS.map(([k,l])=>`<th data-act="sort" data-id="${k}" class="td stk cursor-pointer hover:bg-[#fdeac0] ${NUM.includes(k)?'text-right':''} ${sepH(k)}">${l} <i class="fa-solid ${sort.k===k?(sort.dir>0?'fa-sort-up':'fa-sort-down'):'fa-sort text-slate-400'}"></i></th>${k==='nome'?'<th class="td stk text-center hide-m">Info</th>':''}`).join('')+'<th class="td stk text-center">Storico acconti</th><th class="td stk text-center">Azioni</th>';
 
   // un cliente = una riga (abbonamento più recente) + sottovoci con i precedenti
   const groups=new Map();
@@ -423,14 +413,14 @@ function renderRegistro(){
       <td class="td text-right ${sepB('pagato')}">${pl(r.pagato)}</td><td class="td text-right ${sepB('daPagare')}">${pc(r.daPagare)}</td>`;
   };
   const tail=(r,main)=>`<td class="td text-center"><button data-act="acc" data-id="${r.id}" class="ic text-phx-dark" title="Vedi storico"><i class="fa-solid fa-list"></i> ${r.acconti.length}</button></td>
-    <td class="td text-center">${[main?`<button data-act="newAbb" data-id="${r.id}" class="ic" title="Aggiungi un nuovo abbonamento a questo cliente">➕</button>`:'',`<button data-act="editReg" data-id="${r.id}" class="ic" title="Modifica">✏️</button>`,`<button data-act="delReg" data-id="${r.id}" class="ic text-phx-red" title="Elimina dal Registro"><i class="fa-solid fa-trash"></i></button>`].filter(Boolean).join('<span class="text-phx-dark/50 font-bold">|</span>')}</td>`;
+    <td class="td text-center"><span class="hide-m">${[main?`<button data-act="newAbb" data-id="${r.id}" class="ic" title="Aggiungi un nuovo abbonamento a questo cliente">➕</button>`:'',`<button data-act="editReg" data-id="${r.id}" class="ic" title="Modifica">✏️</button>`,`<button data-act="delReg" data-id="${r.id}" class="ic text-phx-red" title="Elimina dal Registro"><i class="fa-solid fa-trash"></i></button>`].filter(Boolean).join('<span class="text-phx-dark/50 font-bold">|</span>')}</span><button data-act="menuReg" data-id="${r.id}" data-pid="${main?1:''}" class="show-m ic font-bold" title="Azioni">…</button></td>`;
 
   let html='';
   list.forEach((g,gi)=>{
     const r=g.main,st=stato(r),open=expanded.has(g.k),debt=g.old.some(o=>o.daPagare>0.005),sel=regSel===g.k;
     const tog=g.old.length?`<button data-act="toggle" data-id="${esc(g.k)}" class="ic mr-1 ${debt?'text-phx-red':'text-phx-dark'}" title="${debt?'Ci sono importi da saldare negli abbonamenti precedenti. ':''}Abbonamenti precedenti: ${g.old.length}"><i class="fa-solid ${open?'fa-chevron-down':'fa-chevron-right'}"></i> ${g.old.length}</button>`:'';
     html+=`<tr data-act="selReg" data-id="${esc(g.k)}" class="cursor-pointer ${sel?'bg-phx-gold/30':st.ok?'bg-green-50':''}"><td class="td text-center text-slate-400">${gi+1}</td><td class="td font-semibold">${tog}${esc(r.cognome)}</td><td class="td font-semibold">${esc(r.nome)}</td>
-      <td class="td text-center"><button data-act="info" data-id="${r.id}" class="ic text-phx-dark text-lg leading-none" title="Dati anagrafici">ⓘ</button></td>${mid(r,false)}${tail(r,true)}</tr>`;
+      <td class="td text-center hide-m"><button data-act="info" data-id="${r.id}" class="ic text-phx-dark text-lg leading-none" title="Dati anagrafici">ⓘ</button></td>${mid(r,false)}${tail(r,true)}</tr>`;
     if(open)g.old.forEach(o=>{html+=`<tr class="${sel?'bg-phx-gold/30':'bg-phx-gold/10'} text-slate-600"><td class="td pl-8 text-xs text-slate-500" colspan="4">↳ Abbonamento precedente</td>${mid(o,true)}${tail(o,false)}</tr>`});
   });
   $('tb-reg').innerHTML=html;
@@ -439,17 +429,22 @@ function renderRegistro(){
 
 function renderAna(){
   const ACOLS=[['cognome','Cognome'],['nome','Nome'],['sesso','Sesso'],['nascita','Data di nascita (Età)']];
-  $('th-ana').innerHTML='<th class="td stk text-center">#</th>'+ACOLS.map(([k,l])=>`<th data-act="asort" data-id="${k}" class="td stk cursor-pointer hover:bg-[#fdeac0]">${l} <i class="fa-solid ${asort.k===k?(asort.dir>0?'fa-sort-up':'fa-sort-down'):'fa-sort text-slate-400'}"></i></th>`).join('')+'<th class="td stk">Residenza</th><th class="td stk">Telefono</th><th class="td stk">Note</th><th class="td stk text-center">Storico</th><th class="td stk text-center">Azioni</th>';
+  $('th-ana').innerHTML='<th class="td stk text-center">#</th>'+ACOLS.map(([k,l])=>`<th data-act="asort" data-id="${k}" class="td stk cursor-pointer hover:bg-[#fdeac0]">${l} <i class="fa-solid ${asort.k===k?(asort.dir>0?'fa-sort-up':'fa-sort-down'):'fa-sort text-slate-400'}"></i></th>`).join('')+'<th class="td stk hide-m">Residenza</th><th class="td stk">Telefono</th><th class="td stk">Note</th><th class="td stk text-center">Storico</th><th class="td stk text-center">Azioni</th>';
   const rows=S.utenti.filter(match).sort((a,b)=>String(a[asort.k]??'').localeCompare(String(b[asort.k]??''),'it')*asort.dir||a.cognome.localeCompare(b.cognome,'it')||a.nome.localeCompare(b.nome,'it'));
+  const telCell=u=>{
+    if(!u.telefono)return '';
+    const num=`<a class="underline decoration-dotted" href="tel:${esc(u.telefono.replace(/[^\d+]/g,''))}">${esc(u.telefono)}</a>`;
+    return telShow.has(u.id)?num:`<span class="hide-m">${num}</span><button data-act="telDt" data-id="${u.id}" class="show-m ic" title="Mostra numero"><i class="fa-solid fa-phone"></i></button>`;
+  };
   $('tb-ana').innerHTML=rows.map((u,i)=>`<tr data-act="selAna" data-id="${u.id}" class="cursor-pointer ${anaSel===u.id?'bg-phx-gold/20':''}">
-    <td class="td text-center text-slate-400">${i+1}</td><td class="td font-semibold">${esc(u.cognome)}</td><td class="td font-semibold">${esc(u.nome)}</td><td class="td">${u.sesso==='F'?'♀ Femmina':'♂ Maschio'}</td>
-    <td class="td">${fmt(u.nascita)} (<span class="text-phx-dark font-semibold">${age(u.nascita)}</span>)</td><td class="td">${esc(u.residenza)}</td><td class="td">${u.telefono?`<a class="underline decoration-dotted" href="tel:${esc(u.telefono.replace(/[^\d+]/g,''))}">${esc(u.telefono)}</a>`:''}</td><td class="td text-center"><button data-act="noteU" data-id="${u.id}" class="ic ${u.nota?'text-phx-dark':'text-slate-300'}" title="${u.nota?'Leggi nota':'Nessuna nota'}"><i class="fa-solid fa-note-sticky text-lg leading-none"></i></button><button data-act="editU" data-id="${u.id}" class="ic" title="Modifica nota">✏️</button></td>
+    <td class="td text-center text-slate-400">${i+1}</td><td class="td font-semibold">${esc(u.cognome)}</td><td class="td font-semibold">${esc(u.nome)}</td><td class="td text-center">${u.sesso==='F'?'♀':'♂'}<span class="hide-m">${u.sesso==='F'?' Femmina':' Maschio'}</span></td>
+    <td class="td"><span class="hide-m">${fmt(u.nascita)} </span><button data-act="nascDt" data-id="${u.id}" class="underline decoration-dotted" title="${fmt(u.nascita)}">(<span class="text-phx-dark font-semibold">${age(u.nascita)}</span>)</button></td><td class="td hide-m">${esc(u.residenza)}</td><td class="td text-center">${telCell(u)}</td><td class="td text-center"><button data-act="noteU" data-id="${u.id}" class="ic ${u.nota?'text-phx-dark':'text-slate-300'}" title="${u.nota?'Leggi nota':'Nessuna nota'}"><i class="fa-solid fa-note-sticky text-lg leading-none"></i></button><button data-act="editU" data-id="${u.id}" class="ic" title="Modifica nota">✏️</button></td>
     <td class="td text-center"><button data-act="storico" data-id="${u.id}" class="ic text-phx-dark text-lg leading-none" title="Storico abbonamenti">ⓘ</button></td>
-    <td class="td text-center">
+    <td class="td text-center"><span class="hide-m">
       <button data-act="addReg" data-id="${u.id}" class="ic" title="Aggiungi al Registro">➕</button>
       <button data-act="editU" data-id="${u.id}" class="ic" title="Modifica">✏️</button>
       <button data-act="delU" data-id="${u.id}" class="ic" title="Elimina">🗑️</button>
-    </td></tr>`).join('');
+    </span><button data-act="menuAna" data-id="${u.id}" class="show-m ic font-bold" title="Azioni">…</button></td></tr>`).join('');
   $('ana-empty').classList.toggle('hidden',rows.length>0);
 }
 
@@ -710,6 +705,9 @@ const ACT={
     $('info-body').innerHTML=`<p class="text-lg font-bold mb-2">${esc(r.nome)} ${esc(r.cognome)}</p><p class="text-slate-500">Data di nascita</p><p class="font-semibold mb-2">${fmt(r.nascita)} (<span class="text-phx-dark font-semibold">${r.eta} anni</span>)</p><p class="text-slate-500">Residenza</p><p class="font-semibold mb-2">${esc(r.residenza)||'—'}</p><p class="text-slate-500">Telefono</p><p class="font-semibold mb-2">${esc(tel)||'—'}</p><p class="text-slate-500">Note</p><p class="font-semibold">${esc(nota)||'—'}</p>`;
     openModal('m-info');
   },
+  menuAna(id){const u=S.utenti.find(x=>x.id===id);if(!u)return;$('m-info-t').textContent=`${u.nome} ${u.cognome}`;$('info-body').innerHTML=`<button data-act="mDo" data-id="${id}" data-pid="addReg" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full mb-2">➕ Aggiungi al Registro</button><button data-act="mDo" data-id="${id}" data-pid="editU" class="btn bg-phx-red hover:bg-phx-dark w-full mb-2">✏️ Modifica</button><button data-act="mDo" data-id="${id}" data-pid="delU" class="btn bg-black hover:bg-slate-800 w-full">🗑️ Elimina</button>`;openModal('m-info')},
+  mDo(id,fn){closeModal('m-info');if(ACT[fn])ACT[fn](id)},
+  menuReg(id,mp){const r=S.registro.find(x=>x.id===id);if(!r)return;$('m-info-t').textContent=`${r.nome} ${r.cognome}`;$('info-body').innerHTML=`${mp?`<button data-act="mDo" data-id="${id}" data-pid="newAbb" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full mb-2">➕ Nuovo abbonamento</button>`:''}<button data-act="mDo" data-id="${id}" data-pid="editReg" class="btn bg-phx-red hover:bg-phx-dark w-full mb-2">✏️ Modifica</button><button data-act="mDo" data-id="${id}" data-pid="delReg" class="btn bg-black hover:bg-slate-800 w-full">🗑️ Elimina</button>`;openModal('m-info')},
   editU:openUtente,
   delU(id){
     const u=S.utenti.find(x=>x.id===id),n=S.registro.filter(r=>r.utenteId===id).length;
@@ -722,6 +720,8 @@ const ACT={
   csort(k){csort={k,dir:csort.k===k?-csort.dir:1};renderCont()},
   asort(k){asort={k,dir:asort.k===k?-asort.dir:1};renderAna()},
   selAna(id){anaSel=anaSel===id?null:id;renderAna()},
+  nascDt(id){const u=S.utenti.find(x=>x.id===id);if(u&&u.nascita)alert('Data di nascita: '+fmt(u.nascita))},
+  telDt(id){telShow.has(id)?telShow.delete(id):telShow.add(id);renderAna()},
   noteU(id){const u=S.utenti.find(x=>x.id===id);if(!u||!u.nota)return;$('m-info-t').textContent=`Note — ${u.nome} ${u.cognome}`;$('info-body').innerHTML=`<p class="leading-relaxed">${esc(u.nota)}</p>`;openModal('m-info')},
   selReg(id){regSel=regSel===id?null:id;renderRegistro()},
   selCont(id){contSel=contSel===id?null:id;renderCont()},
@@ -1107,33 +1107,6 @@ let tkDrag=null,tkSuppress=0,tkOff=0;
   bar.addEventListener('pointerup',end);bar.addEventListener('pointercancel',end);
   document.addEventListener('click',e=>{if(Date.now()<tkSuppress){e.stopPropagation();e.preventDefault()}},true);
 })();
-
-/* ============ TUTTO SCHERMO TABELLE ============ */
-function toggleFS(){
-  const el=$('view-'+view);if(!el)return;
-  if(document.fullscreenElement){document.exitFullscreen();return}
-  if(el.classList.contains('fs-fake')){el.classList.remove('fs-fake');document.body.classList.remove('overflow-hidden');syncFsBtn();return}
-  if(el.requestFullscreen)el.requestFullscreen().then(()=>syncFsBtn()).catch(()=>fakeFs(el));
-  else fakeFs(el);
-}
-function fakeFs(el){el.classList.add('fs-fake');document.body.classList.add('overflow-hidden');syncFsBtn()}
-function syncFsBtn(){const b=$('btn-fs');if(b)b.innerHTML=(document.fullscreenElement||document.querySelector('.fs-fake'))?'✕':'⛶'}
-document.addEventListener('fullscreenchange',syncFsBtn);
-
-/* MOBILE-EXP (prova): etichette schede + refresh al passaggio a telefono. Per annullare: elimina questo blocco e la riga mobileExp() in renderAll. */
-function mobileExp(){
-  if(window.innerWidth>=768)return;
-  document.querySelectorAll('table.tbl').forEach(t=>{
-    const heads=[...t.querySelectorAll('thead th')].map(h=>h.textContent.replace(/\s+/g,' ').trim());
-    t.querySelectorAll('tbody tr').forEach(tr=>{
-      const tds=[...tr.children].filter(e=>e.tagName==='TD');
-      if(tds.length!==heads.length||tds.some(d=>d.hasAttribute('colspan')))return;
-      tds.forEach((d,i)=>d.setAttribute('data-l',heads[i]||''));
-    });
-  });
-}
-let __mob=window.innerWidth<768;
-addEventListener('resize',()=>{const m=window.innerWidth<768;if(m&&!__mob)renderAll();__mob=m});
 
 /* ============ AVVIO ============ */
 $('f-m').innerHTML=MESI.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
