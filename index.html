@@ -239,7 +239,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
           <button onclick="wipeAll(true)" title="Cancella TUTTO, anche i dati inseriti o importati a mano (doppio avviso + PIN)" class="btn bg-black hover:bg-slate-800 text-base !px-6 !py-3">⚠️ Formatta Tutto ⚠️</button>
         </div>
       </div>
-      <p class="text-center text-xs text-slate-400">versione 2.1.0</p>
+      <p class="text-center text-xs text-slate-400">versione 2.2.0</p>
     </div>
   </section>
 </main>
@@ -430,8 +430,12 @@ function renderRegistro(){
       <td class="td text-right"><button data-act="tot" data-id="${r.id}" class="ic" title="Mostra/nascondi sconto, supplemento e iscrizione">${pl(r.totale)} <i class="fa-solid ${open?'fa-chevron-up':'fa-chevron-down'} text-[10px] text-slate-500"></i></button>${det}</td>
       <td class="td text-right ${sepB('pagato')}">${pl(r.pagato)}</td><td class="td text-right ${sepB('daPagare')}">${pc(r.daPagare)}</td>`;
   };
-  const tail=(r,main)=>`<td class="td text-center"><button data-act="acc" data-id="${r.id}" class="ic text-phx-dark" title="Vedi storico"><i class="fa-solid fa-list"></i> ${r.acconti.length}</button></td>
-    <td class="td text-center"><span class="hide-m">${[main?`<button data-act="newAbb" data-id="${r.id}" class="ic" title="Aggiungi un nuovo abbonamento a questo cliente">➕</button>`:'',`<button data-act="editReg" data-id="${r.id}" class="ic" title="Modifica">✏️</button>`,`<button data-act="delReg" data-id="${r.id}" class="ic text-phx-red" title="Elimina dal Registro"><i class="fa-solid fa-trash"></i></button>`].filter(Boolean).join('<span class="text-phx-dark/50 font-bold">|</span>')}</span><button data-act="menuReg" data-id="${r.id}" data-pid="${main?1:''}" class="show-m ic font-bold" title="Azioni">…</button></td>`;
+  const tail=(r,main)=>{
+    const st=stato(r);
+    const wa=st.exp==='d'?`<button data-act="wa" data-id="${r.id}" class="ic text-green-600" title="Sollecito WhatsApp"><i class="fa-brands fa-whatsapp text-lg leading-none"></i></button>`:'';
+    return `<td class="td text-center"><button data-act="acc" data-id="${r.id}" class="ic text-phx-dark" title="Vedi storico"><i class="fa-solid fa-list"></i> ${r.acconti.length}</button></td>
+    <td class="td text-center"><span class="hide-m">${[main?`<button data-act="newAbb" data-id="${r.id}" class="ic" title="Aggiungi un nuovo abbonamento a questo cliente">➕</button>`:'',wa,`<button data-act="editReg" data-id="${r.id}" class="ic" title="Modifica">✏️</button>`,`<button data-act="delReg" data-id="${r.id}" class="ic text-phx-red" title="Elimina dal Registro"><i class="fa-solid fa-trash"></i></button>`].filter(Boolean).join('<span class="text-phx-dark/50 font-bold">|</span>')}</span><button data-act="menuReg" data-id="${r.id}" data-pid="${main?1:''}" class="show-m ic font-bold" title="Azioni">…</button></td>`;
+  };
 
   let html='';
   list.forEach((g,gi)=>{
@@ -725,7 +729,7 @@ const ACT={
   },
   menuAna(id){const u=S.utenti.find(x=>x.id===id);if(!u)return;$('m-info-t').textContent=`${u.nome} ${u.cognome}`;$('info-body').innerHTML=`<button data-act="mDo" data-id="${id}" data-pid="addReg" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full mb-2">➕ Aggiungi al Registro</button><button data-act="mDo" data-id="${id}" data-pid="editU" class="btn bg-phx-red hover:bg-phx-dark w-full mb-2">✏️ Modifica</button><button data-act="mDo" data-id="${id}" data-pid="delU" class="btn bg-black hover:bg-slate-800 w-full">🗑️ Elimina</button>`;openModal('m-info')},
   mDo(id,fn){closeModal('m-info');if(ACT[fn])ACT[fn](id)},
-  menuReg(id,mp){const r=S.registro.find(x=>x.id===id);if(!r)return;$('m-info-t').textContent=`${r.nome} ${r.cognome}`;$('info-body').innerHTML=`${mp?`<button data-act="mDo" data-id="${id}" data-pid="newAbb" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full mb-2">➕ Nuovo abbonamento</button>`:''}<button data-act="mDo" data-id="${id}" data-pid="editReg" class="btn bg-phx-red hover:bg-phx-dark w-full mb-2">✏️ Modifica</button><button data-act="mDo" data-id="${id}" data-pid="delReg" class="btn bg-black hover:bg-slate-800 w-full">🗑️ Elimina</button>`;openModal('m-info')},
+  menuReg(id,mp){const r=S.registro.find(x=>x.id===id);if(!r)return;const st=stato(calc(r));$('m-info-t').textContent=`${r.nome} ${r.cognome}`;$('info-body').innerHTML=`${st.exp==='d'?`<button data-act="wa" data-id="${id}" class="btn bg-green-600 hover:bg-green-700 !text-white w-full mb-2"><i class="fa-brands fa-whatsapp"></i> Sollecito WhatsApp</button>`:''}${mp?`<button data-act="mDo" data-id="${id}" data-pid="newAbb" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full mb-2">➕ Nuovo abbonamento</button>`:''}<button data-act="mDo" data-id="${id}" data-pid="editReg" class="btn bg-phx-red hover:bg-phx-dark w-full mb-2">✏️ Modifica</button><button data-act="mDo" data-id="${id}" data-pid="delReg" class="btn bg-black hover:bg-slate-800 w-full">🗑️ Elimina</button>`;openModal('m-info')},
   editU:openUtente,
   delU(id){
     const u=S.utenti.find(x=>x.id===id),n=S.registro.filter(r=>r.utenteId===id).length;
@@ -779,6 +783,14 @@ const ACT={
   pickTipo(id){$('a-tipo').value=id;abbSub='X1';renderPick();abbCalc('a-tipo')},
   sub(o){abbSub=o;renderPick();abbCalc()},
   iscrDt(){alert(lastIscrPaid?'Iscrizione saldata il '+fmt(lastIscrPaid):'Iscrizione compresa nel prezzo')},
+  wa(id){
+    const r=S.registro.find(x=>x.id===id);if(!r)return;
+    const u=S.utenti.find(x=>x.id===r.utenteId)||{};
+    let tel=String(u.telefono||'').replace(/[^\d]/g,'').replace(/^00/,'');
+    if(tel.startsWith('3')&&tel.length===10)tel='39'+tel;
+    if(!tel)return alert('Numero di telefono mancante: aggiungilo in Anagrafiche con la matita.');
+    window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(`Ciao ${u.nome||r.nome}, ti ricordo che il tuo abbonamento ${r.tipo} è scaduto il ${fmt(r.fine)}. Per rinnovarlo passa in palestra o rispondi a questo messaggio. Grazie! PHOENIX FITNESS`),'_blank');
+  },
   delReg(id){
     if(!confirm('Eliminare questo abbonamento dal Registro?\nIl cliente resta in Anagrafica, i suoi pagamenti restano nel Libro contabile e lo storico viene conservato.'))return;
     const r=S.registro.find(x=>x.id===id);
