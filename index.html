@@ -40,11 +40,13 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 .pin{color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}
 .land-fs{position:fixed!important;inset:0!important;z-index:40;background:#fff8e8;overflow:auto;padding:.75rem;margin:0!important;max-height:none!important}
 .land-fs .overflow-auto{max-height:none!important;overflow:visible!important}
+.land-fs .td{padding:.15rem .2rem;font-size:.6rem;white-space:normal}
 .show-m{display:none}
 @media(max-width:767px){
   .hide-m{display:none!important}
   .show-m{display:inline-block}
-  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{padding:.15rem .2rem;font-size:.6rem;white-space:normal}
+  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{padding:.1rem .15rem;font-size:.55rem;white-space:normal}
+  main{padding:.5rem!important}
 }
 @layer components{
 .inp{@apply w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-phx-red focus:outline-none}
@@ -293,6 +295,8 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const r2=n=>Math.round(n*100)/100;
 const eur=n=>(n<0?'-':'')+'€ '+Math.abs(+n||0).toFixed(2);
+const fmtM=s=>window.innerWidth<768?fmt(s).replace(/\/20(\d\d)$/,'/$1'):fmt(s);
+const eurM=n=>window.innerWidth<768?((n<0?'-':'')+'€'+Math.abs(Math.round(+n||0))):eur(n);
 const pad=n=>String(n).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const parse=s=>{if(!s)return new Date(NaN);const [y,m,d]=String(s).split('-').map(Number);return new Date(y,m-1,d)};
@@ -406,7 +410,7 @@ function renderRegistro(){
   });
 
   const mid=(r,hist)=>{
-    const st=stato(r),dt=s=>`<span class="${hist?'text-slate-500':st.exp}">${fmt(s)}</span>`,pc=v=>`<span class="${st.pay}">${eur(v)}</span>`,pl=v=>`<span class="${st.pay==='w'?'w2':st.pay}">${eur(v)}</span>`;
+    const st=stato(r),dt=s=>`<span class="${hist?'text-slate-500':st.exp}">${fmtM(s)}</span>`,pc=v=>`<span class="${st.pay}">${eurM(v)}</span>`,pl=v=>`<span class="${st.pay==='w'?'w2':st.pay}">${eurM(v)}</span>`;
     const open=openTot.has(r.id);
     const det=open?`<div class="text-xs font-normal text-slate-600 mt-1.5 space-y-0.5 text-right"><div>Abbonamento ${eur(r.base)}</div><div>Sconto/Supp. ${r.sconto>0?'+':''}${eur(r.sconto)}</div><div>Iscrizione ${eur(r.iscrizione)}</div></div>`:'';
     return `<td class="td ${sepB('tipo')}">${tipoCell(r.tipo)}</td>
@@ -463,10 +467,10 @@ function renderCont(){
   let html='';
   contGroups.forEach((g,gi)=>{
     const p0=g.ps[0];
-    if(g.ps.length===1){const p=p0;html+=`<tr data-act="selCont" data-id="${p.id}" class="cursor-pointer ${contSel===p.id?'bg-phx-gold/30':''}"><td class="td text-center text-slate-400">${gi+1}</td><td class="td">${fmt(p.data)}</td><td class="td font-semibold">${esc(p.cognome)}</td><td class="td font-semibold">${esc(p.nome)}</td><td class="td">${tipoCell(p.tipo)}${p.arch?' <span class="text-xs text-slate-400">(eliminato dal Registro)</span>':''}</td><td class="td text-right">${eur(p.importo)}</td><td class="td text-center"><button data-act="editPag" data-id="${p.id}" class="ic" title="Modifica">✏️</button></td></tr>`;return}
+    if(g.ps.length===1){const p=p0;html+=`<tr data-act="selCont" data-id="${p.id}" class="cursor-pointer ${contSel===p.id?'bg-phx-gold/30':''}"><td class="td text-center text-slate-400">${gi+1}</td><td class="td">${fmt(p.data)}</td><td class="td font-semibold">${esc(p.cognome)}</td><td class="td font-semibold">${esc(p.nome)}</td><td class="td">${tipoCell(p.tipo)}${p.arch?' <span class="text-xs text-slate-400">(eliminato dal Registro)</span>':''}</td><td class="td text-right">${eurM(p.importo)}</td><td class="td text-center"><button data-act="editPag" data-id="${p.id}" class="ic" title="Modifica">✏️</button></td></tr>`;return}
     const open=contExp.has(gi);
-    html+=`<tr data-act="cexp" data-id="${gi}" class="cursor-pointer ${open?'bg-phx-gold/20':''}"><td class="td text-center text-slate-400">${gi+1}</td><td class="td text-xs text-slate-500">${fmt(g.first)} → ${fmt(g.last)}</td><td class="td font-semibold">${esc(p0.cognome)}</td><td class="td font-semibold">${esc(p0.nome)}</td><td class="td">${g.tipo?tipoCell(g.tipo):`<span class="text-xs text-slate-500">${g.ps.length} pagamenti</span>`}</td><td class="td text-right font-bold">${eur(g.sum)}</td><td class="td text-center"><span class="ic inline-block"><i class="fa-solid ${open?'fa-chevron-down':'fa-chevron-right'}"></i> ${g.ps.length}</span></td></tr>`;
-    if(open)g.ps.forEach(p=>{html+=`<tr data-act="selCont" data-id="${p.id}" class="cursor-pointer bg-phx-gold/10 ${contSel===p.id?'!bg-phx-gold/30':''}"><td class="td text-xs text-slate-400 text-right">↳</td><td class="td">${fmt(p.data)}</td><td class="td font-semibold">${esc(p.cognome)}</td><td class="td font-semibold">${esc(p.nome)}</td><td class="td">${tipoCell(p.tipo)}${p.arch?' <span class="text-xs text-slate-400">(eliminato dal Registro)</span>':''}</td><td class="td text-right">${eur(p.importo)}</td><td class="td text-center"><button data-act="editPag" data-id="${p.id}" class="ic" title="Modifica">✏️</button></td></tr>`});
+    html+=`<tr data-act="cexp" data-id="${gi}" class="cursor-pointer ${open?'bg-phx-gold/20':''}"><td class="td text-center text-slate-400">${gi+1}</td><td class="td text-xs text-slate-500">${fmt(g.first)} → ${fmt(g.last)}</td><td class="td font-semibold">${esc(p0.cognome)}</td><td class="td font-semibold">${esc(p0.nome)}</td><td class="td">${g.tipo?tipoCell(g.tipo):`<span class="text-xs text-slate-500">${g.ps.length} pagamenti</span>`}</td><td class="td text-right font-bold">${eurM(g.sum)}</td><td class="td text-center"><span class="ic inline-block"><i class="fa-solid ${open?'fa-chevron-down':'fa-chevron-right'}"></i> ${g.ps.length}</span></td></tr>`;
+    if(open)g.ps.forEach(p=>{html+=`<tr data-act="selCont" data-id="${p.id}" class="cursor-pointer bg-phx-gold/10 ${contSel===p.id?'!bg-phx-gold/30':''}"><td class="td text-xs text-slate-400 text-right">↳</td><td class="td">${fmt(p.data)}</td><td class="td font-semibold">${esc(p.cognome)}</td><td class="td font-semibold">${esc(p.nome)}</td><td class="td">${tipoCell(p.tipo)}${p.arch?' <span class="text-xs text-slate-400">(eliminato dal Registro)</span>':''}</td><td class="td text-right">${eurM(p.importo)}</td><td class="td text-center"><button data-act="editPag" data-id="${p.id}" class="ic" title="Modifica">✏️</button></td></tr>`});
   });
   $('tb-cont').innerHTML=html;
   $('cont-tot').textContent=eur(r2(all.reduce((a,p)=>a+ +p.importo,0)));
@@ -1117,8 +1121,8 @@ function autoLand(){
   if(land&&el&&view!=='home'){el.classList.add('land-fs');document.body.classList.add('overflow-hidden')}
   else document.body.classList.remove('overflow-hidden');
 }
-addEventListener('resize',autoLand);
-addEventListener('orientationchange',()=>setTimeout(autoLand,250));
+let __lo=window.innerWidth>window.innerHeight,__w=window.innerWidth;
+addEventListener('resize',()=>{autoLand();const lo=window.innerWidth>window.innerHeight,w=window.innerWidth;if(lo!==__lo&&(w<1024||__w<1024)){if(view!=='home')renderAll()}__lo=lo;__w=w});
 
 /* ============ AVVIO ============ */
 $('f-m').innerHTML=MESI.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
