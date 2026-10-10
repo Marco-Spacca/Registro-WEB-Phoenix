@@ -45,8 +45,8 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 @media(max-width:767px){
   .hide-m{display:none!important}
   .show-m{display:inline-block}
-  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{padding:.1rem .15rem;font-size:.55rem;white-space:normal}
-  main{padding:.5rem!important}
+  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{padding:.08rem .12rem;font-size:.5rem;white-space:normal}
+  main{padding:.35rem!important}
 }
 @layer components{
 .inp{@apply w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-phx-red focus:outline-none}
@@ -267,7 +267,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 <script>
 /* ============ STATO E PERSISTENZA ============ */
 const KEY='gymfit_v2';
-const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0]];
+const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contGroups=[];
 
@@ -444,7 +444,7 @@ function renderAna(){
   };
   $('tb-ana').innerHTML=rows.map((u,i)=>`<tr data-act="selAna" data-id="${u.id}" class="cursor-pointer ${anaSel===u.id?'bg-phx-gold/20':''}">
     <td class="td text-center text-slate-400">${i+1}</td><td class="td font-semibold">${esc(u.cognome)}</td><td class="td font-semibold">${esc(u.nome)}</td><td class="td text-center">${u.sesso==='F'?'♀':'♂'}<span class="hide-m">${u.sesso==='F'?' Femmina':' Maschio'}</span></td>
-    <td class="td"><span class="hide-m">${fmt(u.nascita)} </span><button data-act="nascDt" data-id="${u.id}" class="underline decoration-dotted" title="${fmt(u.nascita)}">(<span class="text-phx-dark font-semibold">${age(u.nascita)}</span>)</button></td><td class="td hide-m">${esc(u.residenza)}</td><td class="td text-center">${telCell(u)}</td><td class="td text-center"><button data-act="noteU" data-id="${u.id}" class="ic ${u.nota?'text-phx-dark':'text-slate-300'}" title="${u.nota?'Leggi nota':'Nessuna nota'}"><i class="fa-solid fa-note-sticky text-lg leading-none"></i></button></td>
+    <td class="td">${u.nascita?`<span class="hide-m">${fmt(u.nascita)} </span><button data-act="nascDt" data-id="${u.id}" class="underline decoration-dotted" title="${fmt(u.nascita)}">(<span class="text-phx-dark font-semibold">${age(u.nascita)}</span>)</button>`:'—'}</td><td class="td hide-m">${esc(u.residenza)}</td><td class="td text-center">${telCell(u)}</td><td class="td text-center"><button data-act="noteU" data-id="${u.id}" class="ic ${u.nota?'text-phx-dark':'text-slate-300'}" title="${u.nota?'Leggi nota':'Nessuna nota'}"><i class="fa-solid fa-note-sticky text-lg leading-none"></i></button></td>
     <td class="td text-center"><button data-act="storico" data-id="${u.id}" class="ic text-phx-dark text-lg leading-none" title="Storico abbonamenti">ⓘ</button></td>
     <td class="td text-center"><span class="hide-m">
       <button data-act="addReg" data-id="${u.id}" class="ic" title="Aggiungi al Registro">➕</button>
@@ -537,7 +537,7 @@ function renderPick(){
     if(b==='Personal Trainer')return ['2 Giorni','3 Giorni'];
     if(S.tipi.some(x=>x.nome===t.nome+' X2'))return ['X1','X2','X3'];
     return null};
-  $('a-tipi').innerHTML=[...vis].sort((a,b)=>pBase(a,a.mesi)-pBase(b,b.mesi)).map(t=>{
+  $('a-tipi').innerHTML=[...vis].sort((a,b)=>(a.nome==='Custom')-(b.nome==='Custom')||pBase(a,a.mesi)-pBase(b,b.mesi)).map(t=>{
     const bg=rampColor(mx>mn?Math.pow((pBase(t,t.mesi)-mn)/(mx-mn),.6):0);
     const fg=(0.299*hx(bg,1)+0.587*hx(bg,3)+0.114*hx(bg,5))<140?'#ffffff':'#4a0a1c',on=t.id===sel;
     let sub='';
@@ -561,7 +561,7 @@ mod('m-utente','max-w-md','Nuovo utente',`<form id="f-utente" class="p-5 space-y
   ${fld('Cognome *','<input id="u-cognome" required class="inp">')}
   <div class="grid grid-cols-2 gap-3">
     ${fld('Sesso *','<select id="u-sesso" class="inp"><option value="M">♂ Maschio</option><option value="F">♀ Femmina</option></select>')}
-    ${fld('Data di nascita *','<input type="date" id="u-nascita" required class="inp"><span id="u-age" class="text-xs font-semibold text-phx-dark"></span>')}
+    ${fld('Data di nascita','<input type="date" id="u-nascita" class="inp"><span id="u-age" class="text-xs font-semibold text-phx-dark"></span>')}
   </div>
   ${fld('Residente in','<input id="u-residenza" placeholder="Es. Roma, Via Roma 10" class="inp">')}
   ${fld('Telefono','<input type="tel" id="u-tel" inputmode="tel" placeholder="Es. 333 1234567" class="inp">')}
@@ -708,7 +708,7 @@ const ACT={
   info(id){
     const r=calc(S.registro.find(x=>x.id===id)),tel=(S.utenti.find(x=>x.id===r.utenteId)||{}).telefono||'',nota=(S.utenti.find(x=>x.id===r.utenteId)||{}).nota||'';
     $('m-info-t').textContent='Dati anagrafici';
-    $('info-body').innerHTML=`<p class="text-lg font-bold mb-2">${esc(r.nome)} ${esc(r.cognome)}</p><p class="text-slate-500">Data di nascita</p><p class="font-semibold mb-2">${fmt(r.nascita)} (<span class="text-phx-dark font-semibold">${r.eta} anni</span>)</p><p class="text-slate-500">Residenza</p><p class="font-semibold mb-2">${esc(r.residenza)||'—'}</p><p class="text-slate-500">Telefono</p><p class="font-semibold mb-2">${esc(tel)||'—'}</p><p class="text-slate-500">Note</p><p class="font-semibold">${esc(nota)||'—'}</p>`;
+    $('info-body').innerHTML=`<p class="text-lg font-bold mb-2">${esc(r.nome)} ${esc(r.cognome)}</p><p class="text-slate-500">Data di nascita</p><p class="font-semibold mb-2">${r.nascita?`${fmt(r.nascita)} (<span class="text-phx-dark font-semibold">${r.eta} anni</span>)`:'—'}</p><p class="text-slate-500">Residenza</p><p class="font-semibold mb-2">${esc(r.residenza)||'—'}</p><p class="text-slate-500">Telefono</p><p class="font-semibold mb-2">${esc(tel)||'—'}</p><p class="text-slate-500">Note</p><p class="font-semibold">${esc(nota)||'—'}</p>`;
     openModal('m-info');
   },
   menuAna(id){const u=S.utenti.find(x=>x.id===id);if(!u)return;$('m-info-t').textContent=`${u.nome} ${u.cognome}`;$('info-body').innerHTML=`<button data-act="mDo" data-id="${id}" data-pid="addReg" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full mb-2">➕ Aggiungi al Registro</button><button data-act="mDo" data-id="${id}" data-pid="editU" class="btn bg-phx-red hover:bg-phx-dark w-full mb-2">✏️ Modifica</button><button data-act="mDo" data-id="${id}" data-pid="delU" class="btn bg-black hover:bg-slate-800 w-full">🗑️ Elimina</button>`;openModal('m-info')},
@@ -728,7 +728,7 @@ const ACT={
   selAna(id){anaSel=anaSel===id?null:id;renderAna()},
   nascDt(id){const u=S.utenti.find(x=>x.id===id);if(u&&u.nascita)alert('Data di nascita: '+fmt(u.nascita))},
   telDt(id){telShow.has(id)?telShow.delete(id):telShow.add(id);renderAna()},
-  noteU(id){const u=S.utenti.find(x=>x.id===id);if(!u||!u.nota)return;$('m-info-t').textContent=`Note — ${u.nome} ${u.cognome}`;$('info-body').innerHTML=`<p class="leading-relaxed mb-3">${esc(u.nota)}</p><button data-act="mDo" data-id="${id}" data-pid="editU" class="btn bg-phx-red hover:bg-phx-dark w-full">✏️ Modifica</button>`;openModal('m-info')},
+  noteU(id){const u=S.utenti.find(x=>x.id===id);if(!u)return;$('m-info-t').textContent=`Note — ${u.nome} ${u.cognome}`;$('info-body').innerHTML=`${u.nota?`<p class="leading-relaxed mb-3">${esc(u.nota)}</p>`:`<p class="text-slate-400 mb-3">Nessuna nota</p>`}<button data-act="mDo" data-id="${id}" data-pid="editU" class="btn bg-phx-red hover:bg-phx-dark w-full">✏️ Modifica</button>`;openModal('m-info')},
   selReg(id){regSel=regSel===id?null:id;renderRegistro()},
   selCont(id){contSel=contSel===id?null:id;renderCont()},
   cexp(i){i=+i;contExp.has(i)?contExp.delete(i):contExp.add(i);renderCont()},
@@ -1131,7 +1131,7 @@ $('seed-m').innerHTML=$('f-m').innerHTML;$('seed-m').value=$('f-m').value;$('see
 const _o2=S.tipi.find(t=>t.nome==='Personal Trainer 2 giorni a settimana'),_o3=S.tipi.find(t=>t.nome==='Personal Trainer 3 giorni/settimana');
 if(_o2||_o3)S.tipi=S.tipi.filter(t=>t!==_o2&&t!==_o3);
 let _chg=0;
-[['Personal Trainer',_o2?+_o2.prezzo:130,1,1],['Personal Trainer 2 Giorni',_o2?+_o2.prezzo:130,1,1],['Personal Trainer 3 Giorni',_o3?+_o3.prezzo:150,1,1],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0]].forEach(([nome,prezzo,mesi,m])=>{if(!S.tipi.some(t=>t.nome===nome)){S.tipi.push({id:uid(),nome,prezzo,mesi,mensile:!!m});_chg=1}});
+[['Personal Trainer',_o2?+_o2.prezzo:130,1,1],['Personal Trainer 2 Giorni',_o2?+_o2.prezzo:130,1,1],['Personal Trainer 3 Giorni',_o3?+_o3.prezzo:150,1,1],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]].forEach(([nome,prezzo,mesi,m])=>{if(!S.tipi.some(t=>t.nome===nome)){S.tipi.push({id:uid(),nome,prezzo,mesi,mensile:!!m});_chg=1}});
 if(_o2||_o3||_chg)save();
 if(auth.currentUser){loadCloud().then(()=>{locked=false;document.body.classList.remove('locked');$('lock').classList.add('hidden');switchView('home')})}
 else{showLogin();locked=true;document.body.classList.add('locked');$('lock').classList.remove('hidden')}
