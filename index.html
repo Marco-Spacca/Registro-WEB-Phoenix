@@ -239,6 +239,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
           <button onclick="wipeAll(true)" title="Cancella TUTTO, anche i dati inseriti o importati a mano (doppio avviso + PIN)" class="btn bg-black hover:bg-slate-800 text-base !px-6 !py-3">⚠️ Formatta Tutto ⚠️</button>
         </div>
       </div>
+      <p class="text-center text-xs text-slate-400">versione 2.0.0</p>
     </div>
   </section>
 </main>
@@ -279,13 +280,21 @@ function save(){
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
   if(FB.ready&&FB.user){db.collection('stato').doc('main').set(S).catch(()=>{})}
 }
+function ensureTipi(){
+  const _o2=S.tipi.find(t=>t.nome==='Personal Trainer 2 giorni a settimana'),_o3=S.tipi.find(t=>t.nome==='Personal Trainer 3 giorni/settimana');
+  let chg=false;
+  if(_o2||_o3){S.tipi=S.tipi.filter(t=>t!==_o2&&t!==_o3);chg=true}
+  [['Personal Trainer',_o2?+_o2.prezzo:130,1,1],['Personal Trainer 2 Giorni',_o2?+_o2.prezzo:130,1,1],['Personal Trainer 3 Giorni',_o3?+_o3.prezzo:150,1,1],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]].forEach(([nome,prezzo,mesi,m])=>{if(!S.tipi.some(t=>t.nome===nome)){S.tipi.push({id:uid(),nome,prezzo,mesi,mensile:!!m});chg=true}});
+  return chg;
+}
 function loadCloud(){
   return new Promise(res=>{
+    const done=()=>{FB.ready=true;if(ensureTipi())save();res(true)};
     db.collection('stato').doc('main').get().then(d=>{
-      if(d.exists){const s=d.data();if(s&&Array.isArray(s.utenti)&&Array.isArray(s.registro)&&Array.isArray(s.tipi)){s.archivio=Array.isArray(s.archivio)?s.archivio:[];s.spese=Array.isArray(s.spese)?s.spese:[];S=s;FB.ready=true;res(true);return}}
-      const local=load();
-      db.collection('stato').doc('main').set(local).then(()=>{S=local;FB.ready=true;res(true)}).catch(()=>{S=local;FB.ready=true;res(true)});
-    }).catch(()=>{S=load();FB.ready=true;res(true)});
+      if(d.exists){const s=d.data();if(s&&Array.isArray(s.utenti)&&Array.isArray(s.registro)&&Array.isArray(s.tipi)){s.archivio=Array.isArray(s.archivio)?s.archivio:[];s.spese=Array.isArray(s.spese)?s.spese:[];S=s;done();return}}
+      S=load();
+      db.collection('stato').doc('main').set(S).then(done).catch(done);
+    }).catch(()=>{S=load();done()});
   });
 }
 
