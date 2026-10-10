@@ -38,6 +38,8 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 @keyframes bookfloat{0%,100%{transform:translateY(0) rotate(-1.2deg)}50%{transform:translateY(-10px) rotate(1.2deg)}}
 @media(min-width:1024px){#tb-reg .td,#th-reg .td{padding:.5rem;white-space:normal}#tb-reg td:last-child,#tb-reg td:nth-last-child(2){white-space:nowrap}}
 .pin{color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}
+.fs-fake{position:fixed!important;inset:0!important;z-index:60;background:#fff8e8;overflow:auto;padding:1rem;margin:0!important;max-height:none!important}
+.fs-fake .overflow-auto{max-height:none!important;overflow:visible!important}
 @layer components{
 .inp{@apply w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-phx-red focus:outline-none}
 .lbl{@apply block text-xs font-semibold text-slate-700 mb-1}
@@ -53,6 +55,19 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 .w{@apply text-amber-900 font-bold bg-phx-gold rounded px-1.5 py-0.5}
 .d{@apply text-white font-bold bg-phx-red rounded px-1.5 py-0.5}
 .w2{@apply text-amber-900 font-bold bg-[#fff0c4] rounded px-1.5 py-0.5}
+}
+</style>
+<style id="mobile-exp">
+/* MOBILE-EXP (prova): tabelle a schede su telefono, niente scorrimento orizzontale. Per annullare: elimina questo intero blocco + la funzione mobileExp() + la riga mobileExp() in renderAll. */
+@media(max-width:767px){
+  table.tbl thead{display:none}
+  table.tbl,table.tbl tbody{display:block;width:100%}
+  table.tbl tbody tr{display:block;background:#fff;border:1px solid rgba(252,213,129,.8);border-radius:.75rem;margin:0 .25rem .6rem;padding:.2rem .8rem;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  table.tbl tbody td{display:flex;justify-content:space-between;align-items:center;gap:.75rem;width:100%!important;max-width:none!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:right;border:0;padding:.42rem 0}
+  table.tbl tbody td::before{content:attr(data-l);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;color:#64748b;text-align:left;flex-shrink:0;max-width:45%}
+  table.tbl tbody td[colspan]{display:block;text-align:left}
+  table.tbl tfoot{display:block}
+  table.tbl tfoot tr{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
 }
 </style>
 </head>
@@ -104,6 +119,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
       <button id="tbb-nuovo" onclick="openUtente()" class="btn bg-phx-red hover:bg-phx-dark flex-1 sm:flex-none"><i class="fa-solid fa-plus"></i> Nuovo Utente</button>
       <button id="tbb-reg" onclick="switchView('registro')" class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark flex-1 sm:flex-none">📋 Registro</button>
       <button id="tbb-ana" onclick="switchView('anagrafiche')" class="btn bg-phx-red hover:bg-phx-dark flex-1 sm:flex-none hidden"><i class="fa-solid fa-address-book"></i> Anagrafiche</button>
+      <button id="btn-fs" onclick="toggleFS()" class="btn bg-phx-dark hover:bg-black flex-none !px-3 sm:hidden" title="Tabella a tutto schermo">⛶</button>
     </div>
   </div>
 
@@ -372,6 +388,7 @@ function renderAll(){
   else if(view==='contabilita')renderCont();
   else if(view==='stima')renderStima();
   else if(view==='sviluppatore')renderTipi();
+  if(window.innerWidth<768)mobileExp(); /* MOBILE-EXP: rimuovere se si annulla la prova */
 }
 
 const COLS=[['cognome','Cognome'],['nome','Nome'],['tipo','Abbonamento'],['inizio','Inizio'],['fine','Fine'],['totale','Totale (€)'],['pagato','Pagato (€)'],['daPagare','Da pagare (€)']];
@@ -1090,6 +1107,33 @@ let tkDrag=null,tkSuppress=0,tkOff=0;
   bar.addEventListener('pointerup',end);bar.addEventListener('pointercancel',end);
   document.addEventListener('click',e=>{if(Date.now()<tkSuppress){e.stopPropagation();e.preventDefault()}},true);
 })();
+
+/* ============ TUTTO SCHERMO TABELLE ============ */
+function toggleFS(){
+  const el=$('view-'+view);if(!el)return;
+  if(document.fullscreenElement){document.exitFullscreen();return}
+  if(el.classList.contains('fs-fake')){el.classList.remove('fs-fake');document.body.classList.remove('overflow-hidden');syncFsBtn();return}
+  if(el.requestFullscreen)el.requestFullscreen().then(()=>syncFsBtn()).catch(()=>fakeFs(el));
+  else fakeFs(el);
+}
+function fakeFs(el){el.classList.add('fs-fake');document.body.classList.add('overflow-hidden');syncFsBtn()}
+function syncFsBtn(){const b=$('btn-fs');if(b)b.innerHTML=(document.fullscreenElement||document.querySelector('.fs-fake'))?'✕':'⛶'}
+document.addEventListener('fullscreenchange',syncFsBtn);
+
+/* MOBILE-EXP (prova): etichette schede + refresh al passaggio a telefono. Per annullare: elimina questo blocco e la riga mobileExp() in renderAll. */
+function mobileExp(){
+  if(window.innerWidth>=768)return;
+  document.querySelectorAll('table.tbl').forEach(t=>{
+    const heads=[...t.querySelectorAll('thead th')].map(h=>h.textContent.replace(/\s+/g,' ').trim());
+    t.querySelectorAll('tbody tr').forEach(tr=>{
+      const tds=[...tr.children].filter(e=>e.tagName==='TD');
+      if(tds.length!==heads.length||tds.some(d=>d.hasAttribute('colspan')))return;
+      tds.forEach((d,i)=>d.setAttribute('data-l',heads[i]||''));
+    });
+  });
+}
+let __mob=window.innerWidth<768;
+addEventListener('resize',()=>{const m=window.innerWidth<768;if(m&&!__mob)renderAll();__mob=m});
 
 /* ============ AVVIO ============ */
 $('f-m').innerHTML=MESI.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
