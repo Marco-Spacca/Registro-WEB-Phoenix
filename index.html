@@ -38,11 +38,13 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 @keyframes bookfloat{0%,100%{transform:translateY(0) rotate(-1.2deg)}50%{transform:translateY(-10px) rotate(1.2deg)}}
 @media(min-width:1024px){#tb-reg .td,#th-reg .td{padding:.5rem;white-space:normal}#tb-reg td:last-child,#tb-reg td:nth-last-child(2){white-space:nowrap}}
 .pin{color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}
+.land-fs{position:fixed!important;inset:0!important;z-index:40;background:#fff8e8;overflow:auto;padding:.75rem;margin:0!important;max-height:none!important}
+.land-fs .overflow-auto{max-height:none!important;overflow:visible!important}
 .show-m{display:none}
 @media(max-width:767px){
   .hide-m{display:none!important}
   .show-m{display:inline-block}
-  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{padding:.22rem .28rem;font-size:.65rem;white-space:normal}
+  #view-registro .td,#view-anagrafiche .td,#view-contabilita .td{padding:.15rem .2rem;font-size:.6rem;white-space:normal}
 }
 @layer components{
 .inp{@apply w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-phx-red focus:outline-none}
@@ -364,7 +366,7 @@ function switchView(v,ok){
   $('hdr-home').classList.toggle('hidden',v==='home');
   if(v==='home'){q='';$('search').value='';$('home-search').value='';$('home-res').innerHTML=''}
   $('v-title').textContent=TITLES[v][0];$('v-sub').textContent=TITLES[v][1];
-  renderAll();
+  renderAll();autoLand();
 }
 function handleSearch(v){q=v.trim().toLowerCase();renderAll()}
 function openModal(id){$(id).classList.remove('hidden')}
@@ -1107,6 +1109,16 @@ let tkDrag=null,tkSuppress=0,tkOff=0;
   bar.addEventListener('pointerup',end);bar.addEventListener('pointercancel',end);
   document.addEventListener('click',e=>{if(Date.now()<tkSuppress){e.stopPropagation();e.preventDefault()}},true);
 })();
+
+/* ============ FULLSCREEN AUTOMATICO IN ORIZZONTALE (solo mobile) ============ */
+function autoLand(){
+  const land=window.innerWidth>window.innerHeight&&window.innerWidth<1024,el=$('view-'+view);
+  document.querySelectorAll('.land-fs').forEach(e=>{if(e!==el||!land)e.classList.remove('land-fs')});
+  if(land&&el&&view!=='home'){el.classList.add('land-fs');document.body.classList.add('overflow-hidden')}
+  else document.body.classList.remove('overflow-hidden');
+}
+addEventListener('resize',autoLand);
+addEventListener('orientationchange',()=>setTimeout(autoLand,250));
 
 /* ============ AVVIO ============ */
 $('f-m').innerHTML=MESI.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
