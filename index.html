@@ -223,6 +223,11 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
         <textarea id="wa-tpl" rows="4" onchange="S.waTpl=this.value;save()" class="inp"></textarea>
         <div><button onclick="resetWa()" class="text-xs font-semibold text-slate-500 hover:text-phx-dark underline">Ripristina testo originale</button></div>
       </div>
+      <div class="card p-5 space-y-2">
+        <h2 class="font-bold border-b pb-3">Backup automatici</h2>
+        <p class="text-xs text-slate-500">Copie di sicurezza salvate su questo PC a ogni modifica. Da qui puoi tornare indietro se qualcosa sparisce.</p>
+        <div id="bak-list"></div>
+      </div>
       <div class="card p-5 space-y-3 border-2 !border-phx-red/60">
         <h2 class="font-bold text-phx-red border-b border-phx-red/30 pb-3">Zona pericolosa</h2>
         <div class="flex flex-wrap justify-center gap-3">
@@ -233,7 +238,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
     </div>
   </section>
 </main>
-<footer class="text-center text-xs text-slate-400 pt-2 pb-20">versione <span class="ver"></span></footer>
+<footer class="text-center text-xs text-slate-400 pt-2 pb-20">versione <span class="ver"></span> · <span id="upd"></span></footer>
 
 <div id="modals"></div>
 <div id="ticker" class="hidden fixed bottom-0 inset-x-0 z-20 bg-phx-red text-white overflow-hidden whitespace-nowrap shadow-lg"><div id="tk" class="py-2.5 font-bold"></div></div>
@@ -261,16 +266,30 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.6.0';
+const VER='2.7.0';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.utenti)&&Array.isArray(s.registro)&&Array.isArray(s.tipi)){s.archivio=Array.isArray(s.archivio)?s.archivio:[];s.spese=Array.isArray(s.spese)?s.spese:[];s.extra=Array.isArray(s.extra)?s.extra:[];return s}}catch(e){}
   return {utenti:[],registro:[],archivio:[],spese:[],extra:[],blocco:120,tipi:TIPI0.map(([nome,prezzo,mesi,m],i)=>({id:'t'+i,nome,prezzo,mesi,mensile:!!m}))};
 }
+const META='gymfit_meta',BAK='gymfit_bak';
+function snapRaw(raw){try{if(!raw||raw.length>900000)return;let a=[];try{a=JSON.parse(localStorage.getItem(BAK))||[]}catch(_){}if(a.length&&a[0].raw===raw)return;a.unshift({t:Date.now(),raw});a=a.slice(0,5);localStorage.setItem(BAK,JSON.stringify(a))}catch(e){}}
+function adoptFresh(){
+  try{
+    const m=+localStorage.getItem(META)||0;
+    if(m>(+S.updatedAt||0)){
+      const s=JSON.parse(localStorage.getItem(KEY));
+      if(s&&Array.isArray(s.utenti)&&Array.isArray(s.registro)&&Array.isArray(s.tipi)){s.archivio=Array.isArray(s.archivio)?s.archivio:[];s.spese=Array.isArray(s.spese)?s.spese:[];s.extra=Array.isArray(s.extra)?s.extra:[];S=s;return true}
+    }
+  }catch(e){}
+  return false;
+}
 function save(){
   S.updatedAt=Date.now();
-  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  let raw='';
+  try{raw=JSON.stringify(S);localStorage.setItem(KEY,raw);try{localStorage.setItem(META,String(S.updatedAt))}catch(e){}}catch(e){}
+  snapRaw(raw);
   if(FB.ready&&FB.user){db.collection('stato').doc('main').set(S).catch(()=>{})}
 }
 function ensureTipi(){
@@ -282,6 +301,7 @@ function ensureTipi(){
 }
 function loadCloud(){
   return new Promise(res=>{
+    try{const _r=localStorage.getItem(KEY);if(_r)snapRaw(_r)}catch(_){}
     const done=()=>{FB.ready=true;if(ensureTipi())save();res(true)};
     const local=load();
     db.collection('stato').doc('main').get().then(d=>{
@@ -363,6 +383,7 @@ function toggleSidebar(open){$('sb').classList.toggle('-translate-x-full',!open)
 function nav(v){switchView(v);toggleSidebar(false)}
 const GATED=['sviluppatore'];
 function switchView(v,ok){
+  adoptFresh();
   if(GATED.includes(v)&&!ok&&!GATED.includes(view)){askGate(v);return}
   view=v;
   Object.keys(TITLES).forEach(k=>$('view-'+k).classList.toggle('hidden',k!==v));
@@ -389,6 +410,7 @@ function renderAll(){
   else if(view==='contabilita')renderCont();
   else if(view==='stima')renderStima();
   else if(view==='sviluppatore')renderTipi();
+  $('upd').textContent=S.updatedAt?('ultima modifica: '+new Date(S.updatedAt).toLocaleString('it-IT')):'–';
 }
 
 const COLS=[['cognome','Cognome'],['nome','Nome'],['tipo','Abbonamento'],['inizio','Inizio'],['fine','Fine'],['totale','Totale (€)'],['pagato','Pagato (€)'],['daPagare','Da pagare (€)']];
@@ -513,7 +535,7 @@ function renderCont(){
 }
 
 function renderTipi(){
-  $('blocco-def').value=S.blocco||120;$('wa-tpl').value=S.waTpl||WA0;
+  $('blocco-def').value=S.blocco||120;$('wa-tpl').value=S.waTpl||WA0;renderBak();
   $('tb-tipi').innerHTML=[...S.tipi].filter(t=>t.nome!=='Personal Trainer').sort((a,b)=>b.prezzo-a.prezzo).map(t=>`<tr>
     <td class="td font-semibold !whitespace-normal">${esc(t.nome)}</td><td class="td text-right">${eur(t.prezzo)}${t.mensile?' / mese':''}</td>
     <td class="td text-center">${t.mesi}</td>
@@ -775,6 +797,7 @@ const ACT={
   noteU(id){const u=S.utenti.find(x=>x.id===id);if(!u)return;$('m-info-t').textContent=`Note — ${u.nome} ${u.cognome}`;$('info-body').innerHTML=`${u.nota?`<p class="leading-relaxed mb-3">${esc(u.nota)}</p>`:`<p class="text-slate-400 mb-3">Nessuna nota</p>`}<button data-act="mDo" data-id="${id}" data-pid="editU" class="btn bg-phx-red hover:bg-phx-dark w-full">✏️ Modifica</button>`;openModal('m-info')},
   selReg(id){regSel=regSel===id?null:id;renderRegistro()},
   selCont(id){contSel=contSel===id?null:id;renderCont()},
+  bakGo(i){let a=[];try{a=JSON.parse(localStorage.getItem(BAK))||[]}catch(_){}const b=a[+i];if(!b)return alert('Backup non trovato.');let s=null;try{s=JSON.parse(b.raw)}catch(_){}if(!s||!Array.isArray(s.utenti)||!Array.isArray(s.registro)||!Array.isArray(s.tipi))return alert('Backup non valido.');if(!confirm('Ripristinare il backup del '+new Date(b.t).toLocaleString('it-IT')+'? I dati attuali saranno sostituiti.'))return;S=s;save();renderAll();renderBak();alert('Backup ripristinato.');},
   cexp(k){contExp.has(k)?contExp.delete(k):contExp.add(k);renderCont()},
   mese(k){contOpen.has(k)?contOpen.delete(k):contOpen.add(k);renderCont()},
   tick(i){const r=tickItems[+i];if(!r)return;$('home-search').value=`${r.nome} ${r.cognome}`;homeSearch($('home-search').value);$('home-res').scrollIntoView({behavior:'smooth',block:'nearest'})},
@@ -998,6 +1021,10 @@ function clearSeed(){
   save();renderAll();
 }
 
+function renderBak(){
+  const box=$('bak-list');if(!box)return;let a=[];try{a=JSON.parse(localStorage.getItem(BAK))||[]}catch(_){}
+  box.innerHTML=a.length?a.map((b,i)=>`<div class="flex items-center justify-between gap-2 py-1.5 border-b text-sm"><span>${new Date(b.t).toLocaleString('it-IT')} (${Math.round(b.raw.length/1024)} KB)</span><button data-act="bakGo" data-id="${i}" class="btn bg-phx-red hover:bg-phx-dark !py-1 !px-2 !text-xs">Ripristina</button></div>`).join(''):'<p class="text-sm text-slate-500">Nessun backup automatico ancora.</p>';
+}
 function wipeAll(all){
   if(!confirm('Cancellare DEFINITIVAMENTE tutti i dati (clienti, abbonamenti, pagamenti, spese)?'))return;
   if(all&&!confirm('ULTIMO AVVISO: verrà cancellato anche tutto ciò che hai inserito o importato a mano. Continuare?'))return;
@@ -1158,7 +1185,9 @@ function cancelGate(){gateTo=null;unlock()}
 const dots=()=>{const n=$('lock-pin').value.length;$('lock-dots').innerHTML=n?'•'.repeat(n):'<span class="text-gray-400 tracking-normal">✎\uFE0E...</span>'};
 $('lock-pin').addEventListener('input',dots);
 ['pointerdown','keydown','touchstart','scroll','mousemove','input'].forEach(ev=>addEventListener(ev,()=>{if(!locked)idleT=Date.now()},{passive:true,capture:true}));
-setInterval(()=>{if(!locked&&Date.now()-idleT>=idleMs())lock()},5000);
+addEventListener('storage',e=>{if((e.key===KEY||e.key===META)&&adoptFresh())renderAll()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&adoptFresh())renderAll()});
+setInterval(()=>{if(adoptFresh())renderAll();else if(!locked&&Date.now()-idleT>=idleMs())lock()},5000);
 document.addEventListener('visibilitychange',()=>{if(!locked&&document.visibilityState==='visible'&&Date.now()-idleT>=idleMs())lock()});
 function tryUnlock(){
   const now=Date.now(),err=$('lock-err'),f=$('f-lock');
