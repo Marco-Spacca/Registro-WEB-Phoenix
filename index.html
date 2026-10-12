@@ -121,7 +121,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 
   <!-- HOME -->
   <section id="view-home" class="flex flex-col items-center justify-center min-h-[65vh] text-center">
-    <h2 class="flex flex-col items-center gap-2 mb-8"><i class="fa-solid fa-book-open text-phx-red text-8xl sm:text-9xl leading-none book-in"></i><span class="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900">Registro</span><span class="text-xs sm:text-sm font-bold tracking-[.4em] indent-[.4em] text-phx-dark">PHOENIX FITNESS</span></h2>
+    <h2 class="flex flex-col items-center gap-2 mb-8"><i onclick="lock()" title="Blocca schermo" class="fa-solid fa-book-open text-phx-red text-8xl sm:text-9xl leading-none book-in cursor-pointer"></i><span class="text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-900">Registro</span><span class="text-xs sm:text-sm font-bold tracking-[.4em] indent-[.4em] text-phx-dark">PHOENIX FITNESS</span></h2>
     <div class="relative w-full max-w-xl">
       <i class="fa-solid fa-magnifying-glass absolute left-5 top-4 text-slate-400"></i>
       <input id="home-search" type="search" oninput="homeSearch(this.value)" autocomplete="off" placeholder="Cerca un cliente per nome e cognome" class="w-full pl-12 pr-5 py-3.5 rounded-full border border-slate-300 shadow-sm hover:shadow-md focus:shadow-md focus:outline-none focus:border-phx-red text-base bg-white">
@@ -266,7 +266,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.7.0';
+const VER='2.7.1';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
@@ -382,10 +382,10 @@ const TITLES={
 };
 function toggleSidebar(open){$('sb').classList.toggle('-translate-x-full',!open);$('bd').classList.toggle('hidden',!open)}
 function nav(v){switchView(v);toggleSidebar(false)}
-const GATED=['sviluppatore'];
+const GATED=['contabilita','sviluppatore'];let pinOk=false;
 function switchView(v,ok){
   adoptFresh();
-  if(GATED.includes(v)&&!ok&&!GATED.includes(view)){askGate(v);return}
+  if(GATED.includes(v)&&!ok&&!GATED.includes(view)&&!pinOk){askGate(v);return}
   view=v;
   Object.keys(TITLES).forEach(k=>$('view-'+k).classList.toggle('hidden',k!==v));
   document.body.classList.toggle('home',v==='home');
@@ -1160,7 +1160,7 @@ function _chk(pin){
 /* ============ BLOCCO PIN + INATTIVITÀ ============ */
 const idleMs=()=>(+S.blocco||120)*1000;let gateTo=null,idleT=Date.now(),fails=0,until=0,locked=true;
 function lock(){
-  locked=true;document.body.classList.add('locked');$('lock').classList.remove('hidden');
+  locked=true;pinOk=false;document.body.classList.add('locked');$('lock').classList.remove('hidden');
   document.querySelectorAll('.mod').forEach(m=>m.classList.add('hidden'));toggleSidebar(false);
   gateTo=null;showPin();$('lock-cancel').classList.add('hidden');switchView('home');$('lock-pin').value='';dots();$('lock-err').textContent='';setTimeout(()=>$('lock-pin').focus(),60);
 }
@@ -1193,7 +1193,7 @@ document.addEventListener('visibilitychange',()=>{if(!locked&&document.visibilit
 function tryUnlock(){
   const now=Date.now(),err=$('lock-err'),f=$('f-lock');
   if(now<until){err.textContent=`Troppi tentativi. Riprova tra ${Math.ceil((until-now)/1000)} s`;return}
-  if(_chk($('lock-pin').value)){fails=0;const v=gateTo;gateTo=null;unlock();if(v==='__wipe__'||v==='__wipe2__'){wipeNow();return}if(v)switchView(v,true);return}
+  if(_chk($('lock-pin').value)){fails=0;pinOk=true;const v=gateTo;gateTo=null;unlock();if(v==='__wipe__'||v==='__wipe2__'){wipeNow();return}if(v)switchView(v,true);return}
   $('lock-pin').value='';dots();f.classList.remove('shake');void f.offsetWidth;f.classList.add('shake');
   if(++fails>=5){fails=0;until=now+30000;err.textContent='Troppi tentativi. Attendi 30 secondi.'}else err.textContent='PIN errato';
 }
