@@ -30,8 +30,7 @@ body.home #brand{visibility:hidden}
 #tb-season td[colspan] th:last-child,#tb-season td[colspan] td:last-child{border-left:2px solid #fef2d9;width:88px;min-width:88px}
 body.locked{overflow:hidden}
 body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
-#tk{display:flex;flex-direction:column;padding-top:100dvh;animation:tkv var(--d,30s) linear infinite}
-@keyframes tkv{from{transform:translateY(0)}to{transform:translateY(-100%)}}
+
 .shake{animation:sk .3s}
 @keyframes sk{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .flash{animation:fl .65s 1}
@@ -84,7 +83,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
   </div>
 </header>
 
-<div id="bd" onclick="toggleSidebar(false)" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+<div id="bd" onclick="toggleSidebar(false);toggleTk(false)" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
 <aside id="sb" class="fixed top-0 left-0 h-full w-72 bg-phx-dark text-phx-cream z-50 -translate-x-full transition-transform duration-300 shadow-2xl flex flex-col">
   <div class="p-5 border-b border-white/10 flex justify-between items-center text-phx-gold font-bold text-lg">
     <span><i class="fa-solid fa-book-open"></i> PHOENIX FITNESS</span>
@@ -242,7 +241,16 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 <footer class="text-center text-xs text-slate-400 pt-2 pb-20">versione <span class="ver"></span><br><span id="upd"></span></footer>
 
 <div id="modals"></div>
-<div id="ticker" class="hidden fixed right-0 bottom-0 top-24 z-20 w-40 sm:w-52 bg-phx-red/95 text-white overflow-hidden shadow-lg"><p class="px-3 pt-2 text-[11px] font-bold uppercase tracking-wider border-b border-white/30">Scaduti</p><div id="tk" class="text-sm"></div></div>
+<button id="tk-btn" class="hidden fixed bottom-4 right-4 z-30 bg-phx-red text-white w-14 h-14 rounded-full shadow-lg items-center justify-center" onclick="toggleTk(true)" title="Clienti scaduti"><i class="fa-solid fa-bell text-xl"></i><span id="tk-n" class="absolute -top-1 -right-1 bg-phx-gold text-phx-dark text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-phx-cream"></span></button>
+
+<aside id="tkp" class="fixed top-0 right-0 h-full w-72 sm:w-80 bg-phx-red text-white z-50 translate-x-full transition-transform duration-300 shadow-2xl flex flex-col">
+  <div class="p-4 border-b border-white/20 flex justify-between items-center font-bold text-lg">
+    <span><i class="fa-solid fa-bell mr-2 text-phx-gold"></i> Scaduti</span>
+    <button onclick="toggleTk(false)" class="text-white/70 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="tk-list" class="flex-1 overflow-y-auto p-3 space-y-2 text-sm"></div>
+  <div id="tk-pag" class="p-3 border-t border-white/20 flex items-center justify-between text-sm"></div>
+</aside>
 <div id="lock" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-phx-cream/60">
   <div id="login-box" class="bg-white rounded-2xl shadow-2xl border border-phx-gold w-full max-w-xs p-6 text-center space-y-3">
     <p class="font-bold text-phx-dark text-lg">Accedi a Registro</p>
@@ -267,7 +275,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.8.0';
+const VER='2.8.1';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
@@ -802,8 +810,9 @@ const ACT={
   bakGo(i){let a=[];try{a=JSON.parse(localStorage.getItem(BAK))||[]}catch(_){}const b=a[+i];if(!b)return alert('Backup non trovato.');let s=null;try{s=JSON.parse(b.raw)}catch(_){}if(!s||!Array.isArray(s.utenti)||!Array.isArray(s.registro)||!Array.isArray(s.tipi))return alert('Backup non valido.');if(!confirm('Ripristinare il backup del '+new Date(b.t).toLocaleString('it-IT')+'? I dati attuali saranno sostituiti.'))return;S=s;save();renderAll();renderBak();alert('Backup ripristinato.');},
   cexp(k){contExp.has(k)?contExp.delete(k):contExp.add(k);renderCont()},
   mese(k){contOpen.has(k)?contOpen.delete(k):contOpen.add(k);renderCont()},
-  tick(i){const r=tickItems[+i];if(!r)return;$('home-search').value=`${r.nome} ${r.cognome}`;homeSearch($('home-search').value);$('home-res').scrollIntoView({behavior:'smooth',block:'nearest'})},
-  tkx(i){const r=tickItems[+i];if(!r)return;const h=[...new Set(hideGet().concat(pkey(r)))];try{localStorage.setItem(TKH,JSON.stringify(h))}catch(_){}renderTicker()},
+  tick(i){const r=tickItems[+i];if(!r)return;toggleTk(false);$('home-search').value=`${r.nome} ${r.cognome}`;homeSearch($('home-search').value);$('home-res').scrollIntoView({behavior:'smooth',block:'nearest'})},
+  tkx(i){const r=tickItems[+i];if(!r)return;const h=[...new Set(hideGet().concat(pkey(r)))];try{localStorage.setItem(TKH,JSON.stringify(h))}catch(_){}renderTk()},
+  tkpg(d){tkPage+=+d;renderTk()},
   goto(i){const p=homeHits[+i];if(!p||!p.subs.length)return;q=`${p.nome} ${p.cognome}`.toLowerCase();$('search').value=`${p.nome} ${p.cognome}`;switchView('registro');const tr=$('tb-reg').querySelector('tr');if(tr){tr.classList.add('flash');setTimeout(()=>tr.classList.remove('flash'),800)}},
   storico(id){
     const u=S.utenti.find(x=>x.id===id);if(!u)return;
@@ -883,7 +892,7 @@ document.addEventListener('input',e=>{
   if(id==='u-nascita')ageP();else if(id.startsWith('a-'))abbCalc(id);
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){if(gateTo)cancelGate();document.querySelectorAll('.mod').forEach(m=>m.classList.add('hidden'));toggleSidebar(false)}
+  if(e.key==='Escape'){if(gateTo)cancelGate();document.querySelectorAll('.mod').forEach(m=>m.classList.add('hidden'));toggleSidebar(false);toggleTk(false)}
 });
 
 const FORMS={
@@ -1163,7 +1172,7 @@ function _chk(pin){
 const idleMs=()=>(+S.blocco||120)*1000;let gateTo=null,idleT=Date.now(),fails=0,until=0,locked=true;
 function lock(){
   locked=true;pinOk=false;document.body.classList.add('locked');$('lock').classList.remove('hidden');
-  document.querySelectorAll('.mod').forEach(m=>m.classList.add('hidden'));toggleSidebar(false);
+  document.querySelectorAll('.mod').forEach(m=>m.classList.add('hidden'));toggleSidebar(false);toggleTk(false);
   gateTo=null;showPin();$('lock-cancel').classList.add('hidden');switchView('home');$('lock-pin').value='';dots();$('lock-err').textContent='';setTimeout(()=>$('lock-pin').focus(),60);
 }
 function showLogin(){$('login-box').classList.remove('hidden');$('f-lock').classList.add('hidden')}
@@ -1200,19 +1209,32 @@ function tryUnlock(){
   if(++fails>=5){fails=0;until=now+30000;err.textContent='Troppi tentativi. Attendi 30 secondi.'}else err.textContent='PIN errato';
 }
 
-/* ============ BARRA SCADUTI (colonna destra, scorre dal basso verso l'alto) ============ */
-const TKH='gymfit_tkhide';
+/* ============ COLONNA SCADUTI (pannello a comparsa da destra) ============ */
+const TKH='gymfit_tkhide',TKPP=8;
 const hideGet=()=>{try{return JSON.parse(localStorage.getItem(TKH))||[]}catch(_){return[]}};
-function renderTicker(){
+let tkPage=0;
+function toggleTk(open){
+  $('tkp').classList.toggle('translate-x-full',!open);
+  $('bd').classList.toggle('hidden',!open);
+  if(open){tkPage=0;renderTk()}
+}
+function tkItems(){
   const hide=hideGet(),g=new Map();
   S.registro.forEach(r=>{if(!/^(Singolo Ingresso|Tessera)/.test(r.tipo)){const k=pkey(r),o=g.get(k);if(!o||r.fine>o.fine)g.set(k,r)}});
-  const items=[...g.values()].filter(r=>days(r.fine)<-7&&!hide.includes(pkey(r))).sort((a,b)=>(a.fine||'').localeCompare(b.fine||''));
-  $('ticker').classList.toggle('hidden',view!=='home'||!items.length);
-  if(!items.length)return;
-  tickItems=items;
-  $('tk').innerHTML=items.map((r,i)=>`<div class="flex items-start gap-2 px-2 py-1.5 border-b border-white/20"><button data-act="tkx" data-id="${i}" class="text-white/70 hover:text-white font-bold leading-none mt-0.5" title="Nascondi dalla banda">✕</button><button data-act="tick" data-id="${i}" class="text-left flex-1 min-w-0"><span class="block break-words leading-snug">${esc(r.nome)} ${esc(r.cognome)}</span><span class="block text-xs font-normal opacity-80">scad. ${fmt(r.fine)}</span></button></div>`).join('');
-  $('tk').style.setProperty('--d',Math.max(14,items.length*5)+'s');
+  return [...g.values()].filter(r=>days(r.fine)<-7&&!hide.includes(pkey(r))).sort((a,b)=>(a.fine||'').localeCompare(b.fine||''));
 }
+function renderTk(){
+  const all=tkItems(),btn=$('tk-btn');
+  btn.classList.toggle('hidden',view!=='home'||!all.length);
+  if(all.length)$('tk-n').textContent=all.length;
+  const pages=Math.max(1,Math.ceil(all.length/TKPP));
+  if(tkPage>=pages)tkPage=pages-1;
+  const items=all.slice(tkPage*TKPP,(tkPage+1)*TKPP);
+  tickItems=items;
+  $('tk-list').innerHTML=items.length?items.map((r,i)=>`<div class="flex items-start justify-between gap-2 bg-white/10 rounded-lg px-3 py-2"><button data-act="tick" data-id="${i}" class="text-left flex-1 min-w-0"><span class="block break-words leading-snug font-semibold">${esc(r.nome)} ${esc(r.cognome)}</span><span class="block text-xs font-normal opacity-80">scad. ${fmt(r.fine)} · ${esc(r.tipo)}</span></button><button data-act="tkx" data-id="${i}" class="text-white/70 hover:text-white font-bold leading-none" title="Nascondi dall'elenco">✕</button></div>`).join(''):'<p class="text-center py-4 opacity-80">Nessun cliente scaduto in questa pagina.</p>';
+  $('tk-pag').innerHTML=`<button data-act="tkpg" data-id="-1" class="bg-white/15 hover:bg-white/25 rounded-lg px-3 py-1.5 ${all.length&&tkPage>0?'':'opacity-40 pointer-events-none'}"><i class="fa-solid fa-chevron-left"></i></button><span>pagina ${tkPage+1} di ${pages}</span><button data-act="tkpg" data-id="1" class="bg-white/15 hover:bg-white/25 rounded-lg px-3 py-1.5 ${tkPage<pages-1?'':'opacity-40 pointer-events-none'}"><i class="fa-solid fa-chevron-right"></i></button>`;
+}
+function renderTicker(){renderTk()}
 
 /* ============ FULLSCREEN AUTOMATICO IN ORIZZONTALE (solo mobile) ============ */
 function autoLand(){
