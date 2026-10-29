@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registro PHOENIX FITNESS</title>
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -28,9 +30,8 @@ body.home #brand{visibility:hidden}
 #tb-season td[colspan] th:last-child,#tb-season td[colspan] td:last-child{border-left:2px solid #fef2d9;width:88px;min-width:88px}
 body.locked{overflow:hidden}
 body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
-#tk{display:inline-block;padding-left:100vw;animation:tkm var(--d,30s) linear infinite}
-#ticker{cursor:grab;touch-action:pan-y}
-@keyframes tkm{to{transform:translateX(-100%)}}
+#tk{display:flex;flex-direction:column;padding-top:100dvh;animation:tkv var(--d,30s) linear infinite}
+@keyframes tkv{from{transform:translateY(0)}to{transform:translateY(-100%)}}
 .shake{animation:sk .3s}
 @keyframes sk{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .flash{animation:fl .65s 1}
@@ -241,7 +242,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 <footer class="text-center text-xs text-slate-400 pt-2 pb-20">versione <span class="ver"></span><br><span id="upd"></span></footer>
 
 <div id="modals"></div>
-<div id="ticker" class="hidden fixed bottom-0 inset-x-0 z-20 bg-phx-red text-white overflow-hidden whitespace-nowrap shadow-lg"><div id="tk" class="py-2.5 font-bold"></div></div>
+<div id="ticker" class="hidden fixed right-0 bottom-0 top-24 z-20 w-40 sm:w-52 bg-phx-red/95 text-white overflow-hidden shadow-lg"><p class="px-3 pt-2 text-[11px] font-bold uppercase tracking-wider border-b border-white/30">Scaduti</p><div id="tk" class="text-sm"></div></div>
 <div id="lock" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-phx-cream/60">
   <div id="login-box" class="bg-white rounded-2xl shadow-2xl border border-phx-gold w-full max-w-xs p-6 text-center space-y-3">
     <p class="font-bold text-phx-dark text-lg">Accedi a Registro</p>
@@ -266,7 +267,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.7.1';
+const VER='2.8.0';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
@@ -438,9 +439,9 @@ function renderRegistro(){
 
   const mid=(r,hist)=>{
     const st=stato(r),dt=s=>`<span class="${hist?'text-slate-500':st.exp}">${fmtM(s)}</span>`,pc=v=>`<span class="${st.pay}">${eurM(v)}</span>`,pl=v=>`<span class="${st.pay==='w'?'w2':st.pay}">${eurM(v)}</span>`;
-    const open=openTot.has(r.id);
+    const open=openTot.has(r.id),ut=S.utenti.find(u=>u.id===r.utenteId)||{},tel=String(ut.telefono||'').replace(/[^\d]/g,'');
     const det=open?`<div class="text-xs font-normal text-slate-600 mt-1.5 space-y-0.5 text-right"><div>Abbonamento ${eur(r.base)}</div><div>Sconto/Supp. ${r.sconto>0?'+':''}${eur(r.sconto)}</div><div>Iscrizione ${eur(r.iscrizione)}</div></div>`:'';
-    return `<td class="td ${sepB('tipo')}">${tipoCell(r.tipo)}</td><td class="td text-center">${st.exp==='d'?`<button data-act="wa" data-id="${r.id}" class="ic text-green-600" title="Sollecito WhatsApp"><i class="fa-brands fa-whatsapp text-lg leading-none"></i></button>`:''}</td>
+    return `<td class="td ${sepB('tipo')}">${tipoCell(r.tipo)}</td><td class="td text-center"><button data-act="wa" data-id="${r.id}" class="ic ${tel.length>=9?'text-green-600':'text-gray-400'}" title="${tel.length>=9?'Messaggio WhatsApp':'Numero mancante: aggiungilo in Anagrafiche'}"><i class="fa-brands fa-whatsapp text-lg leading-none"></i></button></td>
       <td class="td">${dt(r.inizio)}</td><td class="td ${sepB('fine')}">${dt(r.fine)}</td>
       <td class="td text-right"><button data-act="tot" data-id="${r.id}" class="ic" title="Mostra/nascondi sconto, supplemento e iscrizione">${pl(r.totale)} <i class="fa-solid ${open?'fa-chevron-up':'fa-chevron-down'} text-[10px] text-slate-500"></i></button>${det}</td>
       <td class="td text-right ${sepB('pagato')}">${pl(r.pagato)}</td><td class="td text-right ${sepB('daPagare')}">${pc(r.daPagare)}</td>`;
@@ -548,7 +549,7 @@ function homeSearch(v){
   const t=v.trim().toLowerCase(),box=$('home-res');
   if(t.length<2){box.innerHTML='';return}
   const words=t.split(/\s+/),people=new Map();
-  S.utenti.forEach(u=>people.set(u.id,{nome:u.nome,cognome:u.cognome,subs:[]}));
+  S.utenti.forEach(u=>people.set(u.id,{nome:u.nome,cognome:u.cognome,tel:u.telefono,subs:[]}));
   S.registro.map(calc).forEach(r=>{
     const k=r.utenteId&&people.has(r.utenteId)?r.utenteId:'x'+String(r.nome+'|'+r.cognome).toLowerCase().trim();
     if(!people.has(k))people.set(k,{nome:r.nome,cognome:r.cognome,subs:[]});
@@ -572,8 +573,8 @@ function homeSearch(v){
         +(due>0.005?line(paid>1?WN:DG,'fa-coins',`Da saldare: ${eur(due)}`):line(OK,'fa-circle-check','Tutto saldato'));
     }
     const expSub=p.subs.length?[...p.subs].sort((a,b)=>(b.fine||'').localeCompare(a.fine||''))[0]:null;
-    const showWa=expSub&&days(expSub.fine)<0;
-    return `<div class="bg-white rounded-2xl border border-phx-gold/60 shadow-sm p-4 space-y-2"><p class="font-bold text-lg flex items-center justify-between gap-2"><span>${esc(p.nome)} ${esc(p.cognome)}</span><span class="flex items-center gap-1">${showWa?`<button data-act="wa" data-id="${expSub.id}" class="ic text-green-600" title="Sollecito WhatsApp"><i class="fa-brands fa-whatsapp text-xl leading-none"></i></button>`:''}${p.subs.length?`<button data-act="goto" data-id="${hi}" class="ic text-phx-dark" title="Vai alla riga nel Registro"><i class="fa-solid fa-share"></i></button>`:''}</span></p>${body}</div>`;
+    const telOk=String(p.tel||'').replace(/[^\d]/g,'').length>=9;
+    return `<div class="bg-white rounded-2xl border border-phx-gold/60 shadow-sm p-4 space-y-2"><p class="font-bold text-lg flex items-center justify-between gap-2"><span>${esc(p.nome)} ${esc(p.cognome)}</span><span class="flex items-center gap-1">${expSub?`<button data-act="wa" data-id="${expSub.id}" class="ic ${telOk?'text-green-600':'text-gray-400'}" title="${telOk?'Messaggio WhatsApp':'Numero mancante: aggiungilo in Anagrafiche'}"><i class="fa-brands fa-whatsapp text-xl leading-none"></i></button>`:''}${p.subs.length?`<button data-act="goto" data-id="${hi}" class="ic text-phx-dark" title="Vai alla riga nel Registro"><i class="fa-solid fa-share"></i></button>`:''}</span></p>${body}</div>`;
   }).join('');
 }
 
@@ -802,6 +803,7 @@ const ACT={
   cexp(k){contExp.has(k)?contExp.delete(k):contExp.add(k);renderCont()},
   mese(k){contOpen.has(k)?contOpen.delete(k):contOpen.add(k);renderCont()},
   tick(i){const r=tickItems[+i];if(!r)return;$('home-search').value=`${r.nome} ${r.cognome}`;homeSearch($('home-search').value);$('home-res').scrollIntoView({behavior:'smooth',block:'nearest'})},
+  tkx(i){const r=tickItems[+i];if(!r)return;const h=[...new Set(hideGet().concat(pkey(r)))];try{localStorage.setItem(TKH,JSON.stringify(h))}catch(_){}renderTicker()},
   goto(i){const p=homeHits[+i];if(!p||!p.subs.length)return;q=`${p.nome} ${p.cognome}`.toLowerCase();$('search').value=`${p.nome} ${p.cognome}`;switchView('registro');const tr=$('tb-reg').querySelector('tr');if(tr){tr.classList.add('flash');setTimeout(()=>tr.classList.remove('flash'),800)}},
   storico(id){
     const u=S.utenti.find(x=>x.id===id);if(!u)return;
@@ -1198,29 +1200,19 @@ function tryUnlock(){
   if(++fails>=5){fails=0;until=now+30000;err.textContent='Troppi tentativi. Attendi 30 secondi.'}else err.textContent='PIN errato';
 }
 
-/* ============ BARRA SCADUTI ============ */
+/* ============ BARRA SCADUTI (colonna destra, scorre dal basso verso l'alto) ============ */
+const TKH='gymfit_tkhide';
+const hideGet=()=>{try{return JSON.parse(localStorage.getItem(TKH))||[]}catch(_){return[]}};
 function renderTicker(){
-  const g=new Map();
-  S.registro.forEach(r=>{const k=pkey(r),o=g.get(k);if(!o||r.fine>o.fine)g.set(k,r)});
-  const items=[...g.values()].filter(r=>days(r.fine)<-7).sort((a,b)=>(a.fine||'').localeCompare(b.fine||''));
+  const hide=hideGet(),g=new Map();
+  S.registro.forEach(r=>{if(!/^(Singolo Ingresso|Tessera)/.test(r.tipo)){const k=pkey(r),o=g.get(k);if(!o||r.fine>o.fine)g.set(k,r)}});
+  const items=[...g.values()].filter(r=>days(r.fine)<-7&&!hide.includes(pkey(r))).sort((a,b)=>(a.fine||'').localeCompare(b.fine||''));
   $('ticker').classList.toggle('hidden',view!=='home'||!items.length);
   if(!items.length)return;
   tickItems=items;
-  $('tk').innerHTML=items.map((r,i)=>`<button data-act="tick" data-id="${i}" class="underline decoration-dotted underline-offset-4 cursor-pointer hover:text-phx-gold">${esc(r.nome)} ${esc(r.cognome)} ${fmt(r.fine)}</button>`).join('<span class="mx-6">-</span>');
-  $('tk').style.setProperty('--d',Math.max(18,items.length*7)+'s');
+  $('tk').innerHTML=items.map((r,i)=>`<div class="flex items-start gap-2 px-2 py-1.5 border-b border-white/20"><button data-act="tkx" data-id="${i}" class="text-white/70 hover:text-white font-bold leading-none mt-0.5" title="Nascondi dalla banda">✕</button><button data-act="tick" data-id="${i}" class="text-left flex-1 min-w-0"><span class="block break-words leading-snug">${esc(r.nome)} ${esc(r.cognome)}</span><span class="block text-xs font-normal opacity-80">scad. ${fmt(r.fine)}</span></button></div>`).join('');
+  $('tk').style.setProperty('--d',Math.max(14,items.length*5)+'s');
 }
-
-/* ============ TICKER TRASCINABILE ============ */
-let tkDrag=null,tkSuppress=0,tkOff=0;
-(function(){
-  const bar=$('ticker'),tk=$('tk');
-  const dur=()=>parseFloat(getComputedStyle(tk).animationDuration)||30;
-  bar.addEventListener('pointerdown',e=>{if(bar.classList.contains('hidden'))return;tkDrag={x:e.clientX,lx:e.clientX,cap:false};tk.style.animationPlayState='paused'});
-  bar.addEventListener('pointermove',e=>{if(!tkDrag)return;const dx=e.clientX-tkDrag.lx;tkDrag.lx=e.clientX;if(Math.abs(e.clientX-tkDrag.x)>6){tkSuppress=Date.now()+400;if(!tkDrag.cap){tkDrag.cap=true;try{bar.setPointerCapture(e.pointerId)}catch(_){}}}const d=dur(),w=tk.offsetWidth||1;tkOff=((tkOff-dx/(w/d))%d+d)%d;tk.style.animationDelay=(-tkOff)+'s'});
-  const end=()=>{if(!tkDrag)return;tkDrag=null;tk.style.animationPlayState='running'};
-  bar.addEventListener('pointerup',end);bar.addEventListener('pointercancel',end);
-  document.addEventListener('click',e=>{if(Date.now()<tkSuppress&&e.target.closest('#ticker')){e.stopPropagation();e.preventDefault()}},true);
-})();
 
 /* ============ FULLSCREEN AUTOMATICO IN ORIZZONTALE (solo mobile) ============ */
 function autoLand(){
