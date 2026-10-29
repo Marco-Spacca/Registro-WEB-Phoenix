@@ -275,7 +275,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.8.1';
+const VER='2.8.2';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
@@ -449,7 +449,7 @@ function renderRegistro(){
     const st=stato(r),dt=s=>`<span class="${hist?'text-slate-500':st.exp}">${fmtM(s)}</span>`,pc=v=>`<span class="${st.pay}">${eurM(v)}</span>`,pl=v=>`<span class="${st.pay==='w'?'w2':st.pay}">${eurM(v)}</span>`;
     const open=openTot.has(r.id),ut=S.utenti.find(u=>u.id===r.utenteId)||{},tel=String(ut.telefono||'').replace(/[^\d]/g,'');
     const det=open?`<div class="text-xs font-normal text-slate-600 mt-1.5 space-y-0.5 text-right"><div>Abbonamento ${eur(r.base)}</div><div>Sconto/Supp. ${r.sconto>0?'+':''}${eur(r.sconto)}</div><div>Iscrizione ${eur(r.iscrizione)}</div></div>`:'';
-    return `<td class="td ${sepB('tipo')}">${tipoCell(r.tipo)}</td><td class="td text-center"><button data-act="wa" data-id="${r.id}" class="ic ${tel.length>=9?'text-green-600':'text-gray-400'}" title="${tel.length>=9?'Messaggio WhatsApp':'Numero mancante: aggiungilo in Anagrafiche'}"><i class="fa-brands fa-whatsapp text-lg leading-none"></i></button></td>
+    return `<td class="td ${sepB('tipo')}">${tipoCell(r.tipo)}</td><td class="td text-center">${tel.length>=9?`<button data-act="wa" data-id="${r.id}" class="ic text-green-600" title="Messaggio WhatsApp"><i class="fa-brands fa-whatsapp text-lg leading-none"></i></button>`:r.utenteId?`<button data-act="editU" data-id="${esc(r.utenteId)}" class="ic text-gray-400 opacity-50 hover:opacity-100" title="Numero mancante: clicca per aggiungerlo in Anagrafica"><i class="fa-brands fa-whatsapp text-lg leading-none"></i></button>`:`<button data-act="wa" data-id="${r.id}" class="ic text-gray-400 opacity-50" title="Numero mancante"><i class="fa-brands fa-whatsapp text-lg leading-none"></i></button>`}</td>
       <td class="td">${dt(r.inizio)}</td><td class="td ${sepB('fine')}">${dt(r.fine)}</td>
       <td class="td text-right"><button data-act="tot" data-id="${r.id}" class="ic" title="Mostra/nascondi sconto, supplemento e iscrizione">${pl(r.totale)} <i class="fa-solid ${open?'fa-chevron-up':'fa-chevron-down'} text-[10px] text-slate-500"></i></button>${det}</td>
       <td class="td text-right ${sepB('pagato')}">${pl(r.pagato)}</td><td class="td text-right ${sepB('daPagare')}">${pc(r.daPagare)}</td>`;
@@ -557,7 +557,7 @@ function homeSearch(v){
   const t=v.trim().toLowerCase(),box=$('home-res');
   if(t.length<2){box.innerHTML='';return}
   const words=t.split(/\s+/),people=new Map();
-  S.utenti.forEach(u=>people.set(u.id,{nome:u.nome,cognome:u.cognome,tel:u.telefono,subs:[]}));
+  S.utenti.forEach(u=>people.set(u.id,{id:u.id,nome:u.nome,cognome:u.cognome,tel:u.telefono,subs:[]}));
   S.registro.map(calc).forEach(r=>{
     const k=r.utenteId&&people.has(r.utenteId)?r.utenteId:'x'+String(r.nome+'|'+r.cognome).toLowerCase().trim();
     if(!people.has(k))people.set(k,{nome:r.nome,cognome:r.cognome,subs:[]});
@@ -582,7 +582,7 @@ function homeSearch(v){
     }
     const expSub=p.subs.length?[...p.subs].sort((a,b)=>(b.fine||'').localeCompare(a.fine||''))[0]:null;
     const telOk=String(p.tel||'').replace(/[^\d]/g,'').length>=9;
-    return `<div class="bg-white rounded-2xl border border-phx-gold/60 shadow-sm p-4 space-y-2"><p class="font-bold text-lg flex items-center justify-between gap-2"><span>${esc(p.nome)} ${esc(p.cognome)}</span><span class="flex items-center gap-1">${expSub?`<button data-act="wa" data-id="${expSub.id}" class="ic ${telOk?'text-green-600':'text-gray-400'}" title="${telOk?'Messaggio WhatsApp':'Numero mancante: aggiungilo in Anagrafiche'}"><i class="fa-brands fa-whatsapp text-xl leading-none"></i></button>`:''}${p.subs.length?`<button data-act="goto" data-id="${hi}" class="ic text-phx-dark" title="Vai alla riga nel Registro"><i class="fa-solid fa-share"></i></button>`:''}</span></p>${body}</div>`;
+    return `<div class="bg-white rounded-2xl border border-phx-gold/60 shadow-sm p-4 space-y-2"><p class="font-bold text-lg flex items-center justify-between gap-2"><span>${esc(p.nome)} ${esc(p.cognome)}</span><span class="flex items-center gap-1">${expSub?(telOk?`<button data-act="wa" data-id="${expSub.id}" class="ic text-green-600" title="Messaggio WhatsApp"><i class="fa-brands fa-whatsapp text-xl leading-none"></i></button>`:p.id?`<button data-act="editU" data-id="${esc(p.id)}" class="ic text-gray-400 opacity-50 hover:opacity-100" title="Numero mancante: clicca per aggiungerlo in Anagrafica"><i class="fa-brands fa-whatsapp text-xl leading-none"></i></button>`:''):''}${p.subs.length?`<button data-act="goto" data-id="${hi}" class="ic text-phx-dark" title="Vai alla riga nel Registro"><i class="fa-solid fa-share"></i></button>`:''}</span></p>${body}</div>`;
   }).join('');
 }
 
@@ -1210,7 +1210,7 @@ function tryUnlock(){
 }
 
 /* ============ COLONNA SCADUTI (pannello a comparsa da destra) ============ */
-const TKH='gymfit_tkhide',TKPP=8;
+const TKH='gymfit_tkhide',TKPP=15;
 const hideGet=()=>{try{return JSON.parse(localStorage.getItem(TKH))||[]}catch(_){return[]}};
 let tkPage=0;
 function toggleTk(open){
@@ -1231,7 +1231,7 @@ function renderTk(){
   if(tkPage>=pages)tkPage=pages-1;
   const items=all.slice(tkPage*TKPP,(tkPage+1)*TKPP);
   tickItems=items;
-  $('tk-list').innerHTML=items.length?items.map((r,i)=>`<div class="flex items-start justify-between gap-2 bg-white/10 rounded-lg px-3 py-2"><button data-act="tick" data-id="${i}" class="text-left flex-1 min-w-0"><span class="block break-words leading-snug font-semibold">${esc(r.nome)} ${esc(r.cognome)}</span><span class="block text-xs font-normal opacity-80">scad. ${fmt(r.fine)} · ${esc(r.tipo)}</span></button><button data-act="tkx" data-id="${i}" class="text-white/70 hover:text-white font-bold leading-none" title="Nascondi dall'elenco">✕</button></div>`).join(''):'<p class="text-center py-4 opacity-80">Nessun cliente scaduto in questa pagina.</p>';
+  $('tk-list').innerHTML=items.length?items.map((r,i)=>`<div class="flex items-start justify-between gap-2 bg-white/10 rounded-lg px-2.5 py-1.5 text-xs"><button data-act="tick" data-id="${i}" class="text-left flex-1 min-w-0 leading-tight"><span class="block break-words font-semibold">${esc(r.nome)} ${esc(r.cognome)}</span><span class="block text-[10px] font-normal opacity-80">scad. ${fmt(r.fine)} · ${esc(r.tipo)}</span></button><button data-act="tkx" data-id="${i}" class="text-white/70 hover:text-white font-bold leading-none mt-0.5" title="Nascondi dall'elenco">✕</button></div>`).join(''):'<p class="text-center py-4 opacity-80">Nessun cliente scaduto in questa pagina.</p>';
   $('tk-pag').innerHTML=`<button data-act="tkpg" data-id="-1" class="bg-white/15 hover:bg-white/25 rounded-lg px-3 py-1.5 ${all.length&&tkPage>0?'':'opacity-40 pointer-events-none'}"><i class="fa-solid fa-chevron-left"></i></button><span>pagina ${tkPage+1} di ${pages}</span><button data-act="tkpg" data-id="1" class="bg-white/15 hover:bg-white/25 rounded-lg px-3 py-1.5 ${tkPage<pages-1?'':'opacity-40 pointer-events-none'}"><i class="fa-solid fa-chevron-right"></i></button>`;
 }
 function renderTicker(){renderTk()}
