@@ -277,7 +277,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.8.5';
+const VER='2.8.6';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
@@ -810,7 +810,7 @@ const ACT={
   cexp(k){contExp.has(k)?contExp.delete(k):contExp.add(k);renderCont()},
   mese(k){contOpen.has(k)?contOpen.delete(k):contOpen.add(k);renderCont()},
   tick(i){const r=tickItems[+i];if(!r)return;toggleTk(false);$('home-search').value=`${r.nome} ${r.cognome}`;homeSearch($('home-search').value);$('home-res').scrollIntoView({behavior:'smooth',block:'nearest'})},
-  tkx(i){const r=tickItems[+i];if(!r)return;const h=[...new Set(hideGet().concat(pkey(r)))];try{localStorage.setItem(TKH,JSON.stringify(h))}catch(_){}renderTk()},
+  tkx(i){const r=tickItems[+i];if(!r)return;if(!confirm('Nascondere '+r.nome+' '+r.cognome+' dall\'elenco degli scaduti?'))return;const h=[...new Set(hideGet().concat(pkey(r)))];try{localStorage.setItem(TKH,JSON.stringify(h))}catch(_){}renderTk()},
   tkpg(d){tkPage+=+d;renderTk()},
   goto(i){const p=homeHits[+i];if(!p||!p.subs.length)return;q=`${p.nome} ${p.cognome}`.toLowerCase();$('search').value=`${p.nome} ${p.cognome}`;switchView('registro');const tr=$('tb-reg').querySelector('tr');if(tr){tr.classList.add('flash');setTimeout(()=>tr.classList.remove('flash'),800)}},
   storico(id){
