@@ -277,7 +277,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.8.4';
+const VER='2.8.5';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
@@ -674,11 +674,11 @@ mod('m-entr','max-w-sm','Nuova entrata',`<form id="f-entr" class="p-5 space-y-3"
     ${fld('Data','<input type="date" id="en-data" required class="inp">')}
   </div>${save_btn('Salva entrata')}</form>`)+
 mod('m-edit','max-w-lg','Modifica abbonamento',`<form id="f-edit" class="p-5 space-y-3"><input type="hidden" id="e-id">
-  <p id="e-cli" class="font-semibold"></p>
+  <p id="e-cli" class="font-bold text-white text-center"></p>
   <div class="border-t border-white/40 pt-3 grid grid-cols-2 gap-3">
     ${fld('Tipo di abbonamento','<input id="e-tipo" list="dl-tipi" required class="inp"><datalist id="dl-tipi"></datalist>','col-span-2')}
     ${fld('Prezzo abbonamento €','<input type="number" id="e-base" min="0" step="0.01" class="inp">')}
-    ${fld('Sconto (−) / Supplemento (+) €','<input type="number" id="e-sconto" step="0.01" class="inp">')}
+    ${fld('Sconto (−) / Extra (+) €','<input type="number" id="e-sconto" step="0.01" class="inp">')}
     ${fld('Inizio','<input type="date" id="e-inizio" required class="inp">')}${fld('Fine','<input type="date" id="e-fine" required class="inp">')}
     ${fld('Iscrizione €','<input type="number" id="e-iscr" min="0" step="0.01" class="inp">')}
   </div><button class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full">Salva modifiche</button></form>`,1)+
