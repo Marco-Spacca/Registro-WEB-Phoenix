@@ -277,7 +277,7 @@ body.locked>:not(#lock){filter:blur(12px);pointer-events:none;user-select:none}
 const KEY='gymfit_v2';
 const TIPI0=[['Personal Trainer',130,1,1],['Personal Trainer 2 Giorni',130,1,1],['Personal Trainer 3 Giorni',150,1,1],['Ginnastica Dolce',200,1,1],['Annuale',320,12,0],['Semestrale',230,6,0],['Trimestrale',120,3,0],['Trimestrale X2',110,3,0],['Trimestrale X3',100,3,0],['Mensile',45,1,0],['Mensile X2',40,1,0],['Mensile X3',35,1,0],['Singolo Ingresso',6,0,0],['Tessera 12 ingressi',50,0,0],['Tessera 12 ingressi X2',45,0,0],['Tessera 12 ingressi X3',40,0,0],['Custom',0,1,0]];
 const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-const VER='2.8.3';
+const VER='2.8.4';
 let S=load(), view='registro', q='', sort={k:'cognome',dir:1}, csort={k:'data',dir:1}, asort={k:'cognome',dir:1}, tickItems=[], homeHits=[], anaSel=null, regSel=null, contSel=null, contOpen=new Set();
 
 function load(){
@@ -673,19 +673,15 @@ mod('m-entr','max-w-sm','Nuova entrata',`<form id="f-entr" class="p-5 space-y-3"
     ${fld('Importo €','<input type="number" id="en-imp" min="0.01" step="0.01" required class="inp">')}
     ${fld('Data','<input type="date" id="en-data" required class="inp">')}
   </div>${save_btn('Salva entrata')}</form>`)+
-mod('m-edit','max-w-lg','Modifica',`<form id="f-edit" class="p-5 space-y-3"><input type="hidden" id="e-id">
-  <div class="grid grid-cols-2 gap-3">
-    ${fld('Nome (solo lettura)','<input id="e-nome" readonly class="inp bg-white/60 text-white/90 cursor-not-allowed">')}${fld('Cognome (solo lettura)','<input id="e-cognome" readonly class="inp bg-white/60 text-white/90 cursor-not-allowed">')}
-    ${fld('Data di nascita','<input type="date" id="e-nascita" class="inp">')}${fld('Residenza','<input id="e-res" class="inp">')}
-  </div>
-  <p class="text-[11px] text-white/80">Nome e cognome si cambiano da Anagrafiche, con la matita.</p>
+mod('m-edit','max-w-lg','Modifica abbonamento',`<form id="f-edit" class="p-5 space-y-3"><input type="hidden" id="e-id">
+  <p id="e-cli" class="font-semibold"></p>
   <div class="border-t border-white/40 pt-3 grid grid-cols-2 gap-3">
     ${fld('Tipo di abbonamento','<input id="e-tipo" list="dl-tipi" required class="inp"><datalist id="dl-tipi"></datalist>','col-span-2')}
     ${fld('Prezzo abbonamento €','<input type="number" id="e-base" min="0" step="0.01" class="inp">')}
     ${fld('Sconto (−) / Supplemento (+) €','<input type="number" id="e-sconto" step="0.01" class="inp">')}
     ${fld('Inizio','<input type="date" id="e-inizio" required class="inp">')}${fld('Fine','<input type="date" id="e-fine" required class="inp">')}
     ${fld('Iscrizione €','<input type="number" id="e-iscr" min="0" step="0.01" class="inp">')}
-  </div>${save_btn('Salva modifiche')}</form>`,1)+
+  </div><button class="btn bg-phx-gold hover:bg-amber-300 !text-phx-dark w-full">Salva modifiche</button></form>`,1)+
 mod('m-info','max-w-md','Dati anagrafici','<div id="info-body" class="p-5 text-sm"></div>')+
 mod('m-tipo','max-w-md','Tipo di abbonamento',`<form id="f-tipo" class="p-5 space-y-3"><input type="hidden" id="t-id">
   ${fld('Nome *','<input id="t-nome" required class="inp">')}
@@ -832,7 +828,8 @@ const ACT={
   editReg(id){
     const r=S.registro.find(x=>x.id===id);
     $('e-id').value=id;$('dl-tipi').innerHTML=S.tipi.map(t=>`<option value="${esc(t.nome)}">`).join('');
-    [['nome','nome'],['cognome','cognome'],['nascita','nascita'],['res','residenza'],['tipo','tipo'],['base','base'],['sconto','sconto'],['inizio','inizio'],['fine','fine'],['iscr','iscrizione']].forEach(([a,b])=>$('e-'+a).value=r[b]??'');
+    $('e-cli').textContent=`${r.nome} ${r.cognome}`;
+    [['tipo','tipo'],['base','base'],['sconto','sconto'],['inizio','inizio'],['fine','fine'],['iscr','iscrizione']].forEach(([a,b])=>$('e-'+a).value=r[b]??'');
     openModal('m-edit');
   },
   editPag(id){
@@ -903,12 +900,7 @@ const FORMS={
   'f-edit'(){
     const r=S.registro.find(x=>x.id===$('e-id').value),g=k=>$('e-'+k).value;
     if(g('fine')<g('inizio'))return alert('La data di fine non può essere precedente all\'inizio.');
-    const pers={nome:g('nome').trim(),cognome:g('cognome').trim(),nascita:g('nascita'),residenza:g('res').trim()};
     Object.assign(r,{tipo:g('tipo').trim(),base:+g('base')||0,sconto:+g('sconto')||0,iscrizione:+g('iscr')||0,inizio:g('inizio'),fine:g('fine')});
-    if(r.utenteId){
-      S.registro.filter(x=>x.utenteId===r.utenteId).forEach(x=>Object.assign(x,pers));
-      const u=S.utenti.find(x=>x.id===r.utenteId);if(u)Object.assign(u,pers);
-    }else Object.assign(r,pers);
     done('m-edit');
   },
   'f-pag'(){
